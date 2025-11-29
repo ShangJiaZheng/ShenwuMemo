@@ -1,0 +1,10 @@
+{
+  "appId": "com.yourcompany.shenwu",
+  "appName": "神武",
+  "webDir": "public",
+  "bundledWebRuntime": false,
+  "server": {
+    "url": "http://localhost:3000",
+    "cleartext": true
+  }
+}

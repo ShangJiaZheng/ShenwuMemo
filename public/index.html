@@ -1,0 +1,2754 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <title>神武收益追踪器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/zh.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/material_blue.css">
+    
+    <!-- cy227预览相关样式 -->
+    <style>
+        .cy227-preview-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: linear-gradient(135deg, #3B82F6, #6366F1);
+            color: white;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .cy227-preview-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+        }
+        .cy227-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 1001;
+        }
+        .cy227-modal-content {
+            position: relative;
+            width: 90%;
+            height: 90%;
+            margin: 2% auto;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        }
+        .cy227-close {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            color: #fff;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 1002;
+            background: rgba(0, 0, 0, 0.5);
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .cy227-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#10B981',
+                        danger: '#EF4444',
+                        warning: '#F59E0B',
+                        info: '#6366F1',
+                        text: {
+                            primary: '#1E293B',
+                            secondary: '#475569',
+                            tertiary: '#64748B'
+                        }
+                    },
+                    fontSize: {
+                        'sm': '0.95rem',
+                        'base': '1.1rem',
+                        'lg': '1.25rem',
+                        'xl': '1.35rem'
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .scrollbar-hide {
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+            .scrollbar-hide::-webkit-scrollbar {
+                display: none;
+            }
+            /* 隐藏全局纵向滚动条，但保持内容可滚动 */
+            html {
+                overflow-y: scroll;
+                scrollbar-width: none; /* Firefox */
+            }
+            html::-webkit-scrollbar {
+                display: none; /* Chrome, Safari, Edge */
+            }
+            .text-shadow {
+                text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+            }
+            .transition-all-300 {
+                transition: all 300ms ease-in-out;
+            }
+            .hover-btn {
+                transition: all 0.2s ease;
+            }
+            .hover-btn:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            }
+            .bold-red {
+                font-weight: bold;
+                color: red;
+            }
+            .profit-highlight-week {
+                background: linear-gradient(135deg, #10b981, #34d399);
+                color: white;
+                font-weight: bold;
+                border-radius: 8px;
+                padding: 2px 8px;
+                box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+                animation: pulse-glow 2s infinite;
+            }
+            .profit-highlight-month {
+                background: linear-gradient(135deg, #f59e0b, #fbbf24);
+                color: white;
+                font-weight: bold;
+                border-radius: 4px;
+                padding: 1px 4px;
+                box-shadow: 0 1px 4px rgba(245, 158, 11, 0.4);
+                animation: golden-glow 1.5s infinite alternate;
+                font-size: 0.85em;
+            }
+            .profit-mostlight-month {
+                background: linear-gradient(135deg,#ff0000, #ffabab);
+                color: white;
+                font-weight: bold;
+                border-radius: 4px;
+                padding: 1px 4px;
+                box-shadow: 0 1px 4px rgba(245, 158, 11, 0.4);
+                animation: golden-glow 1.5s infinite alternate;
+                font-size: 0.85em;
+            }
+            @keyframes pulse-glow {
+                0% { box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3); }
+                50% { box-shadow: 0 4px 12px rgba(16, 185, 129, 0.6); }
+                100% { box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3); }
+            }
+            @keyframes golden-glow {
+                0% { box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4); }
+                100% { box-shadow: 0 6px 20px rgba(245, 158, 11, 0.8); }
+            }
+            .glass-card {
+                backdrop-filter: blur(10px);
+                background: rgba(255, 255, 255, 0.9);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+            }
+            .gradient-bg {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            }
+            /* Mac 适配优化 */
+            @media screen and (-webkit-min-device-pixel-ratio: 2) {
+                body {
+                    -webkit-font-smoothing: antialiased;
+                    -moz-osx-font-smoothing: grayscale;
+                }
+            }
+            /* 确保表格在小屏幕上可以横向滚动 */
+            .table-container {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            /* 优化滚动条样式（Mac） */
+            ::-webkit-scrollbar {
+                width: 8px;
+                height: 8px;
+            }
+            ::-webkit-scrollbar-track {
+                background: #f1f1f1;
+                border-radius: 4px;
+            }
+            ::-webkit-scrollbar-thumb {
+                background: #888;
+                border-radius: 4px;
+            }
+            ::-webkit-scrollbar-thumb:hover {
+                background: #555;
+            }
+        }
+    </style>
+    <!-- 定义周一到周日的颜色 -->
+    <style>
+        .week-day-1 {
+            background-color: #EF4444;
+            color: white;
+        }
+
+        .week-day-2 {
+            background-color: #F59E0B;
+            color: white;
+        }
+
+        .week-day-3 {
+            background-color: #FBBF24;
+            color: white;
+        }
+
+        .week-day-4 {
+            background-color: #10B981;
+            color: white;
+        }
+
+        .week-day-5 {
+            background-color: #3B82F6;
+            color: white;
+        }
+
+        .week-day-6 {
+            background-color: #8B5CF6;
+            color: white;
+        }
+
+        .week-day-7 {
+            background-color: #8B5CF6;
+            color: white;
+        }
+        .sparkline {
+            display: block;
+        }
+        .sparkline polyline {
+            stroke: #3b82f6;
+            stroke-width: 1.5;
+            fill: none;
+        }
+        /* 等宽数字，保证 1 与 8 等宽 */
+        .tabular-nums {
+            font-variant-numeric: tabular-nums;
+            font-feature-settings: 'tnum' 1, 'lnum' 1;
+        }
+        .clickable-stat-container {
+            position: relative;
+            cursor: pointer;
+        }
+        .disabled-stat-container {
+            position: relative;
+            cursor: not-allowed;
+        }
+        .hover-pointer-icon,
+        .hover-ban-icon {
+            position: absolute;
+            right: 6px;
+            top: 6px;
+            opacity: 0;
+            transition: opacity .2s ease;
+        }
+        .clickable-stat-container:hover .hover-pointer-icon {
+            opacity: 1;
+        }
+        .disabled-stat-container:hover .hover-ban-icon {
+            opacity: 1;
+        }
+        .top-list {
+            max-height: 320px;
+            overflow-y: auto;
+        }
+        .top-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 10px;
+            border-radius: 10px;
+            background: #f9fafb;
+            margin-bottom: 8px;
+        }
+        .top-item:hover {
+            background: #eef2ff;
+        }
+        .top-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+        }
+        .top-rank {
+            width: 26px;
+            height: 26px;
+            border-radius: 9999px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        .top-rank.r1 { background: linear-gradient(135deg,#f59e0b,#ef4444); }
+        .top-rank.r2 { background: linear-gradient(135deg,#3b82f6,#8b5cf6); }
+        .top-rank.r3 { background: linear-gradient(135deg,#10b981,#22c55e); }
+        .top-rank.rx { background: #9ca3af; }
+        .top-date { color: #374151; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .top-value { color: #111827; font-weight: 700; }
+        .top-value { font-variant-numeric: tabular-nums; font-feature-settings: 'tnum' 1, 'lnum' 1; }
+        #weekly-guard-list .guard-chip {
+            display: inline-flex;
+            align-items: center;
+            background: #f3f4f6;
+            color: #111827;
+            padding: 6px 12px;
+            border-radius: 9999px;
+            margin-right: 6px;
+            margin-bottom: 6px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+            font-size: 1rem;
+            line-height: 1.25rem;
+            cursor: pointer;
+        }
+        #weekly-guard-list .guard-chip:hover {
+            background: #eef2ff;
+            transform: translateY(-1px);
+            box-shadow: 0 3px 8px rgba(0,0,0,0.12);
+        }
+        #weekly-guard-list .guard-icon {
+            width: 40px;
+            height: 40px;
+            object-fit: contain;
+            margin-right: 8px;
+        }
+        .guard-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+        }
+        .guard-modal.show {
+            display: flex;
+        }
+        .guard-modal-content {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+        }
+        .guard-modal-icon {
+            width: 64px;
+            height: 64px;
+            object-fit: contain;
+            margin: 0 auto 8px auto;
+        }
+        .guard-modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #111827;
+        }
+        .guard-modal-dates {
+            margin-top: 8px;
+            font-size: 0.95rem;
+            color: #4b5563;
+        }
+        .guard-modal-close {
+            margin-top: 12px;
+            background: #ef4444;
+            color: #ffffff;
+            padding: 6px 12px;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 p-4 font-sans">
+    <div class="max-w-full mx-auto px-2 sm:px-4 lg:px-6 flex flex-col min-h-[calc(100vh-2rem)]">
+        <header class="gradient-bg rounded-lg shadow-md p-3 sm:p-4 mb-3 text-white">
+            <h1 class="text-lg sm:text-xl font-bold text-center mb-0.5 text-shadow">💰 阳春白雪-王富贵.</br>(3436055)</h1>
+            <p class="text-center text-blue-100 text-xs sm:text-sm">记录每一天的增长，见证财富的积累</p>
+        </header>
+
+        <!-- 主要内容区域：三栏布局 -->
+        <div class="flex flex-col lg:flex-row gap-2 flex-1 min-h-0">
+            <!-- 保存数据区域：15%宽度 -->
+            <div class="w-full lg:w-[12%] xl:w-[15%] space-y-2 flex-shrink-0">
+                <div class="bg-white rounded-lg shadow-sm p-3 h-[calc(100vh-200px)] flex flex-col overflow-hidden">
+                    <!-- 数据录入标题 -->
+                    <h2
+                        class="text-lg font-bold mb-3 text-text-primary flex items-center border-b border-gray-100 pb-2 flex-shrink-0">
+                        <i class="fas fa-database mr-2 text-primary"></i>
+                        数据录入
+                    </h2>
+                    <div class="flex-1 overflow-y-auto">
+                    <form id="add-form" class="space-y-3">
+                        <div class="form-group">
+                            <label for="日期" class="block text-sm font-bold text-text-secondary mb-1">日期</label>
+                            <div class="relative">
+                                <input type="text" id="日期" name="日期"
+                                    class="w-full px-3 py-2 pl-10 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary cursor-pointer text-base"
+                                    required readonly>
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fas fa-calendar-alt text-gray-400"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="剩余银币" class="block text-sm font-bold text-text-secondary mb-0.5">剩余银币</label>
+                            <input type="number" id="剩余银币" name="剩余银币"
+                                class="w-full px-2 py-1.5 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary text-base"
+                                required>
+                        </div>
+                        <div class="form-group">
+                            <label for="消耗银币" class="block text-sm font-bold text-text-secondary mb-0.5">消耗银币</label>
+                            <input type="number" id="消耗银币" name="消耗银币"
+                                class="w-full px-2 py-1.5 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary text-base">
+                        </div>
+                        <div class="form-group">
+                            <label for="图片上传" class="block text-sm font-bold text-text-secondary mb-0.5">图片上传</label>
+                            <!-- 美化后的图片上传区域 -->
+                            <div id="custom-file-upload"
+                                class="w-full border-2 border-dashed border-gray-300 rounded-md p-3 text-center hover:border-primary transition-colors cursor-pointer bg-gray-50">
+                                <input type="file" id="图片上传" name="图片上传" accept="image/*" multiple class="hidden">
+                                <div class="flex flex-col items-center">
+                                    <i class="fas fa-cloud-upload-alt text-2xl text-gray-400 mb-2"></i>
+                                    <p class="text-sm text-text-tertiary">点击或拖拽图片到此处上传</p>
+                                </div>
+                            </div>
+                            <!-- 文件信息显示区域 -->
+                            <div id="file-info" class="mt-2 text-sm text-text-tertiary hidden"></div>
+                        </div>
+                        <button type="submit"
+                            class="w-full bg-primary hover:bg-primary/90 text-white font-bold py-1.5 px-3 rounded-md transition-colors text-base shadow hover:shadow-md transform hover:-translate-y-0.5">
+                            <i class="fas fa-save mr-2"></i>
+                            保存数据
+                        </button>
+                        <!-- 潜龙在渊按钮移到保存数据下方 -->
+                        <button type="button" id="open-notes-btn"
+                            class="w-full bg-secondary hover:bg-secondary/90 text-white font-bold py-1.5 px-3 rounded-md transition-colors text-base shadow hover:shadow-md transform hover:-translate-y-0.5">
+                            <i class="fas fa-sticky-note mr-2"></i>
+                            潜龙在渊
+                        </button>
+                    </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 本周数据区域：35%宽度 -->
+            <div class="w-full lg:w-[32%] xl:w-[35%] space-y-2 flex-shrink-0">
+                <div class="bg-white rounded-lg shadow-sm p-3 h-[calc(100vh-200px)] flex flex-col overflow-hidden">
+                    <!-- 本周数据标题 -->
+                    <h2
+                        class="text-lg font-bold mb-3 text-text-primary flex items-center border-b border-gray-100 pb-2 flex-shrink-0">
+                        <i class="fas fa-calendar-week mr-2 text-primary"></i>
+                        本周数据
+                    </h2>
+                    <div class="mb-3 flex-shrink-0">
+                        <div id="week-display"
+                            class="text-sm xl:text-base text-primary font-bold text-center py-1 px-2 xl:px-3 bg-blue-50 rounded-md border border-blue-100 mt-0.5 transition-all duration-300 hover:bg-blue-100">
+                            加载中...</div>
+                    </div>
+                    <div class="flex-1 overflow-x-auto overflow-y-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50 sticky top-0">
+                                <tr>
+                                    <th scope="col" style="min-width: 160px; max-width: 160px;"
+                                        class="px-2 py-2 text-left text-xs xl:text-sm font-bold text-text-secondary uppercase tracking-wider whitespace-nowrap">
+                                        日期
+                                    </th>
+                                    <th scope="col" style="min-width: 100px; max-width: 100px;"
+                                        class="px-2 py-2 text-right text-xs xl:text-sm font-bold text-text-secondary uppercase tracking-wider whitespace-nowrap">
+                                        剩余
+                                    </th>
+                                    <th scope="col" style="min-width: 100px; max-width: 100px;"
+                                        class="px-2 py-2 text-right text-xs xl:text-sm font-bold text-text-secondary uppercase tracking-wider whitespace-nowrap">
+                                        消耗
+                                    </th>
+                                    <th scope="col" style="min-width: 90px; max-width: 90px;"
+                                        class="px-2 py-2 text-right text-xs xl:text-sm font-bold text-text-secondary uppercase tracking-wider whitespace-nowrap">
+                                        收益
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody id="data-table-body" class="bg-white divide-y divide-gray-200">
+                                <!-- 数据将通过JS动态加载 -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="weekly-guard-list" class="mt-2 mb-1 flex flex-wrap gap-2 items-center text-xs xl:text-sm text-text-primary"></div>
+                    <div id="guard-detail-modal" class="guard-modal">
+                        <div class="guard-modal-content">
+                            <img id="guard-detail-icon" class="guard-modal-icon" src="" alt="">
+                            <div id="guard-detail-text" class="guard-modal-title"></div>
+                            <div id="guard-detail-dates" class="guard-modal-dates"></div>
+                            <button id="guard-detail-close" class="guard-modal-close">关闭</button>
+                        </div>
+                    </div>
+                    <div id="profit-detail-modal" class="guard-modal">
+                        <div class="guard-modal-content">
+                            <div id="profit-detail-title" class="guard-modal-title"></div>
+                            <div id="profit-detail-avg" class="guard-modal-dates"></div>
+                            <div id="profit-detail-chart" class="mt-2"></div>
+                            <button id="profit-detail-close" class="guard-modal-close">关闭</button>
+                        </div>
+                    </div>
+                    <div id="top-stats-modal" class="guard-modal">
+                        <div class="guard-modal-content">
+                            <div id="top-stats-title" class="guard-modal-title"></div>
+                            <div id="top-stats-list" class="mt-2 text-sm text-gray-700 top-list"></div>
+                            <button id="top-stats-close" class="guard-modal-close">关闭</button>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-2 pt-3 border-t border-gray-200 flex-shrink-0">
+                        <div class="flex items-center gap-6">
+                            <div class="flex items-center gap-2 cursor-pointer" ondblclick="toggleCheckbox('修炼瓶')" title="双击切换状态">
+                                <span class="text-sm font-semibold text-text-primary">修炼瓶</span>
+                                <span id="light-修炼瓶" class="inline-block w-4 h-4 rounded-full bg-red-500 relative">
+                                    <span class="absolute inset-0 rounded-full bg-red-400 blur-sm opacity-70"></span>
+                                </span>
+                            </div>
+                            <div class="flex items-center gap-2 cursor-pointer" ondblclick="toggleCheckbox('保卫门派')" title="双击切换状态">
+                                <span class="text-sm font-semibold text-text-primary">保卫门派</span>
+                                <span id="light-保卫门派" class="inline-block w-4 h-4 rounded-full bg-red-500 relative">
+                                    <span class="absolute inset-0 rounded-full bg-red-400 blur-sm opacity-70"></span>
+                                </span>
+                                <input id="guard-content-input" type="text" placeholder="输入内容" class="ml-3 px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary w-32">
+                                <button id="save-guard-content-btn" type="button" class="px-2 py-1 text-sm bg-primary text-white rounded-md hover:bg-primary/90">保存</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 统计信息区域：占用剩余所有空间 -->
+            <div class="w-full lg:flex-1 min-w-0">
+                <div class="bg-white rounded-lg shadow-sm p-3 h-[calc(100vh-200px)] flex flex-col overflow-hidden">
+                    <!-- 统计信息标题 -->
+                    <h2
+                        class="text-lg font-bold mb-3 text-text-primary flex items-center border-b border-gray-100 pb-2 flex-shrink-0">
+                        <i class="fas fa-chart-pie mr-2 text-primary"></i>
+                        统计信息
+                    </h2>
+                    <div class="flex-1 overflow-y-auto">
+                    <!-- 调整统计信息为每行显示3个 -->
+                    <div class="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 gap-3">
+                        <div
+                            class="bg-gradient-to-br from-amber-500 to-amber-600 p-2 rounded-md text-white shadow-sm hover:shadow-md transition-all-300 hover:scale-101 transform flex flex-col sm:flex-row items-center gap-2">
+                            <i class="fas fa-calendar-days text-lg xl:text-xl text-amber-200 opacity-80"></i>
+                            <div class="flex-1 min-w-0">
+                                <h3 class="text-xs xl:text-sm font-bold text-amber-100 mb-0.5 text-center">记录天数</h3>
+                                <div class="disabled-stat-container">
+                                    <p id="record-days" class="text-base xl:text-lg font-bold text-center truncate tabular-nums">0</p>
+                                    <i class="fas fa-ban hover-ban-icon"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div
+                            class="bg-gradient-to-br from-blue-500 to-blue-600 p-2 rounded-md text-white shadow-sm hover:shadow-md transition-all-300 hover:scale-101 transform flex flex-col sm:flex-row items-center gap-2">
+                            <i class="fas fa-coins text-lg xl:text-xl text-blue-200 opacity-80"></i>
+                            <div class="flex-1 min-w-0">
+                                <h3 class="text-xs xl:text-sm font-bold text-blue-100 mb-0.5 text-center">总收益银币</h3>
+                                <div class="disabled-stat-container">
+                                    <p id="total-silver" class="text-base xl:text-lg font-bold text-center truncate tabular-nums">0</p>
+                                    <i class="fas fa-ban hover-ban-icon"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div
+                            class="bg-gradient-to-br from-green-500 to-green-600 p-2 rounded-md text-white shadow-sm hover:shadow-md transition-all-300 hover:scale-101 transform flex flex-col sm:flex-row items-center gap-2">
+                            <i class="fas fa-fire text-lg xl:text-xl text-green-200 opacity-80"></i>
+                            <div class="flex-1 min-w-0">
+                                <h3 class="text-xs xl:text-sm font-bold text-green-100 mb-0.5 text-center">总消耗银币</h3>
+                                <div class="disabled-stat-container">
+                                    <p id="total-expense" class="text-base xl:text-lg font-bold text-center truncate tabular-nums">0</p>
+                                    <i class="fas fa-ban hover-ban-icon"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div
+                            class="bg-gradient-to-br from-purple-500 to-purple-600 p-2 rounded-md text-white shadow-sm hover:shadow-md transition-all-300 hover:scale-101 transform flex flex-col sm:flex-row items-center gap-2">
+                            <i class="fas fa-trophy text-lg xl:text-xl text-red-200 opacity-80"></i>
+                            <div class="flex-1 min-w-0">
+                                <h3 class="text-xs xl:text-sm font-bold text-red-100 mb-0.5 text-center">日最高收益</h3>
+                                <div class="clickable-stat-container">
+                                    <p id="max-daily-income" class="text-base xl:text-lg font-bold text-center truncate tabular-nums">0</p>
+                                    <i class="fas fa-hand-pointer hover-pointer-icon"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div
+                            class="bg-gradient-to-br from-red-500 to-pink-600 p-2 rounded-md text-white shadow-sm hover:shadow-md transition-all-300 hover:scale-101 transform flex flex-col sm:flex-row items-center gap-2">
+                            <i class="fas fa-medal text-lg xl:text-xl text-orange-200 opacity-80"></i>
+                            <div class="flex-1 min-w-0">
+                                <h3 class="text-xs xl:text-sm font-bold text-orange-100 mb-0.5 text-center">周最高收益</h3>
+                                <div class="clickable-stat-container">
+                                    <p id="max-weekly-income" class="text-base xl:text-lg font-bold text-center truncate tabular-nums">0</p>
+                                    <i class="fas fa-hand-pointer hover-pointer-icon"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div
+                            class="bg-gradient-to-br from-orange-500 to-yellow-600 p-2 rounded-md text-white shadow-sm hover:shadow-md transition-all-300 hover:scale-101 transform flex flex-col sm:flex-row items-center gap-2">
+                            <i class="fas fa-crown text-lg xl:text-xl text-indigo-200 opacity-80"></i>
+                            <div class="flex-1 min-w-0">
+                                <h3 class="text-xs xl:text-sm font-bold text-indigo-100 mb-0.5 text-center">月最高收益</h3>
+                                <div class="clickable-stat-container">
+                                    <p id="max-monthly-income" class="text-base xl:text-lg font-bold text-center truncate tabular-nums">0</p>
+                                    <i class="fas fa-hand-pointer hover-pointer-icon"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div
+                            class="bg-gradient-to-br from-indigo-500 to-purple-600 p-2 rounded-md text-white shadow-sm hover:shadow-md transition-all-300 hover:scale-101 transform flex flex-col sm:flex-row items-center gap-2">
+                            <i class="fas fa-chart-pie text-lg xl:text-xl text-purple-200 opacity-80"></i>
+                            <div class="flex-1 min-w-0">
+                                <h3 class="text-xs xl:text-sm font-bold text-purple-100 mb-0.5 text-center">日平均收益</h3>
+                                <div class="disabled-stat-container">
+                                    <p id="average-daily-income" class="text-base xl:text-lg font-bold text-center truncate tabular-nums">0</p>
+                                    <i class="fas fa-ban hover-ban-icon"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 收入消耗变化图表 -->
+                    <div class="mt-3 p-2 border border-gray-200 rounded-lg bg-white">
+                        <h3 class="text-sm xl:text-base font-bold mb-2 text-text-primary flex items-center">
+                            <i class="fas fa-chart-line mr-2 text-primary"></i>
+                            收入消耗变化
+                        </h3>
+                        <div class="h-48 xl:h-64">
+                            <canvas id="incomeExpenseChart"></canvas>
+                        </div>
+                    </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 美化图片上传区域的JS -->
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const customFileUpload = document.getElementById('custom-file-upload');
+                const fileInput = document.getElementById('图片上传');
+                const fileInfo = document.getElementById('file-info');
+
+                // 点击自定义上传区域时触发文件选择
+                customFileUpload.addEventListener('click', function () {
+                    fileInput.click();
+                });
+
+                // 监听文件选择变化
+                fileInput.addEventListener('change', function () {
+                    if (this.files.length > 0) {
+                        fileInfo.textContent = `已选择 ${this.files.length} 个文件`;
+                        fileInfo.classList.remove('hidden');
+                        // 为上传区域添加选中效果
+                        customFileUpload.classList.add('border-primary', 'bg-blue-50');
+                        setTimeout(() => {
+                            customFileUpload.classList.remove('border-primary', 'bg-blue-50');
+                        }, 1500);
+                    } else {
+                        fileInfo.classList.add('hidden');
+                    }
+                });
+
+                // 添加拖拽上传功能
+                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                    customFileUpload.addEventListener(eventName, preventDefaults, false);
+                });
+
+                function preventDefaults(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+
+                ['dragenter', 'dragover'].forEach(eventName => {
+                    customFileUpload.addEventListener(eventName, highlight, false);
+                });
+
+                ['dragleave', 'drop'].forEach(eventName => {
+                    customFileUpload.addEventListener(eventName, unhighlight, false);
+                });
+
+                function highlight() {
+                    customFileUpload.classList.add('border-primary', 'bg-blue-50');
+                }
+
+                function unhighlight() {
+                    customFileUpload.classList.remove('border-primary', 'bg-blue-50');
+                }
+
+                customFileUpload.addEventListener('drop', handleDrop, false);
+
+                function handleDrop(e) {
+                    const dt = e.dataTransfer;
+                    const files = dt.files;
+
+                    if (files.length > 0) {
+                        // 创建一个新的FileList对象
+                        const dataTransfer = new DataTransfer();
+                        for (let i = 0; i < files.length; i++) {
+                            if (files[i].type.startsWith('image/')) {
+                                dataTransfer.items.add(files[i]);
+                            }
+                        }
+
+                        if (dataTransfer.files.length > 0) {
+                            fileInput.files = dataTransfer.files;
+                            fileInfo.textContent = `已选择 ${dataTransfer.files.length} 个图片文件`;
+                            fileInfo.classList.remove('hidden');
+                        }
+                    }
+                }
+            });
+        </script>
+
+        <!-- 子画面（备注管理模态框） -->
+        <div id="notes-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 hidden">
+            <div class="bg-white rounded-xl p-6 max-w-2xl max-h-[90vh] overflow-auto w-full mx-4">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-2xl font-bold text-gray-800 flex items-center">
+                        <i class="fas fa-sticky-note text-primary mr-2"></i>
+                        潜龙在渊详情
+                    </h3>
+                    <button id="close-notes-btn" class="text-gray-500 hover:text-gray-700 transition-colors">
+                        <i class="fas fa-times text-2xl"></i>
+                    </button>
+                </div>
+                <div class="space-y-2 mb-6">
+                    <div class="form-group flex gap-4 items-center mb-4 h-[50px]">
+                        <div class="pet-avatar w-[50px] h-full flex-shrink-0 rounded-lg overflow-hidden border border-gray-200 shadow-sm flex items-center justify-center" id="avatar-note1"></div>
+                        <input type="text" id="note1" name="note1"
+                            class="flex-1 h-full px-4 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-primary focus:border-primary">
+                        <div id="preview-note1"
+                            class="w-1/2 p-3 bg-gray-50 rounded-lg border border-gray-200 h-full overflow-auto flex items-center"
+                            style="display: none;"></div>
+                    </div>
+                    <div class="form-group flex gap-4 items-center mb-4 h-[50px]">
+                        <div class="pet-avatar w-[50px] h-full flex-shrink-0 rounded-lg overflow-hidden border border-gray-200 shadow-sm flex items-center justify-center" id="avatar-note2"></div>
+                        <input type="text" id="note2" name="note2"
+                            class="flex-1 h-full px-4 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-primary focus:border-primary">
+                        <div id="preview-note2"
+                            class="w-1/2 p-3 bg-gray-50 rounded-lg border border-gray-200 h-full overflow-auto flex items-center"
+                            style="display: none;"></div>
+                    </div>
+                    <div class="form-group flex gap-4 items-center mb-4 h-[50px]">
+                        <div class="pet-avatar w-[50px] h-full flex-shrink-0 rounded-lg overflow-hidden border border-gray-200 shadow-sm flex items-center justify-center" id="avatar-note3"></div>
+                        <input type="text" id="note3" name="note3"
+                            class="flex-1 h-full px-4 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-primary focus:border-primary">
+                        <div id="preview-note3"
+                            class="w-1/2 p-3 bg-gray-50 rounded-lg border border-gray-200 h-full overflow-auto flex items-center"
+                            style="display: none;"></div>
+                    </div>
+                    <div class="form-group flex gap-4 items-center mb-4 h-[50px]">
+                        <div class="pet-avatar w-[50px] h-full flex-shrink-0 rounded-lg overflow-hidden border border-gray-200 shadow-sm flex items-center justify-center" id="avatar-note4"></div>
+                        <input type="text" id="note4" name="note4"
+                            class="flex-1 h-full px-4 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-primary focus:border-primary">
+                        <div id="preview-note4"
+                            class="w-1/2 p-3 bg-gray-50 rounded-lg border border-gray-200 h-full overflow-auto flex items-center"
+                            style="display: none;"></div>
+                    </div>
+                    <div class="form-group flex gap-4 items-center mb-4 h-[50px]">
+                        <div class="pet-avatar w-[50px] h-full flex-shrink-0 rounded-lg overflow-hidden border border-gray-200 shadow-sm flex items-center justify-center" id="avatar-note5"></div>
+                        <input type="text" id="note5" name="note5"
+                            class="flex-1 h-full px-4 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-primary focus:border-primary">
+                        <div id="preview-note5"
+                            class="w-1/2 p-3 bg-gray-50 rounded-lg border border-gray-200 h-full overflow-auto flex items-center"
+                            style="display: none;"></div>
+                    </div>
+                    <div class="form-group flex gap-4 items-center mb-4 h-[50px]">
+                        <div class="pet-avatar w-[50px] h-full flex-shrink-0 rounded-lg overflow-hidden border border-gray-200 shadow-sm flex items-center justify-center" id="avatar-note6"></div>
+                        <input type="text" id="note6" name="note6"
+                            class="flex-1 h-full px-4 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-primary focus:border-primary">
+                        <div id="preview-note6"
+                            class="w-1/2 p-3 bg-gray-50 rounded-lg border border-gray-200 h-full overflow-auto flex items-center"
+                            style="display: none;"></div>
+                    </div>
+                    <div class="form-group flex gap-4 items-center mb-4 h-[50px]">
+                        <div class="pet-avatar w-[50px] h-full flex-shrink-0 rounded-lg overflow-hidden border border-gray-200 shadow-sm flex items-center justify-center" id="avatar-note7"></div>
+                        <input type="text" id="note7" name="note7"
+                            class="flex-1 h-full px-4 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-primary focus:border-primary">
+                        <div id="preview-note7"
+                            class="w-1/2 p-3 bg-gray-50 rounded-lg border border-gray-200 h-full overflow-auto flex items-center"
+                            style="display: none;"></div>
+                    </div>
+                    <div class="flex justify-end space-x-4">
+                        <button id="undo-notes-btn"
+                            class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded-lg transition-colors shadow hover:shadow-md flex items-center gap-2 hidden">
+                            <i class="fas fa-undo"></i>
+                            撤回
+                        </button>
+                        <button id="save-notes-btn"
+                            class="bg-primary hover:bg-primary/90 text-white font-bold py-2 px-6 rounded-lg transition-colors shadow hover:shadow-md flex items-center gap-2">
+                            <i class="fas fa-save"></i>
+                            保存
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 消耗银币详情模态框 -->
+        <div id="expense-details-modal"
+            class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 hidden">
+            <div class="bg-white rounded-xl p-6 max-w-md w-full mx-4">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-2xl font-bold text-gray-800 flex items-center">
+                        <i class="fas fa-coins text-yellow-500 mr-2"></i>
+                        消耗详情
+                    </h3>
+                    <button id="close-expense-details-btn" class="text-gray-500 hover:text-gray-700 transition-colors">
+                        <i class="fas fa-times text-2xl"></i>
+                    </button>
+                </div>
+                <div class="space-y-4 mb-6">
+                    <div class="form-group">
+                        <label for="expense-date" class="block text-sm font-bold text-gray-700 mb-1">日期</label>
+                        <input type="text" id="expense-date"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="expense-amount" class="block text-sm font-bold text-gray-700 mb-1">消耗银币</label>
+                        <input type="text" id="expense-amount"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="expense-details" class="block text-sm font-bold text-gray-700 mb-1">消耗详情</label>
+                        <textarea id="expense-details" rows="4"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"></textarea>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-4">
+                    <button id="undo-expense-details-btn"
+                        class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded-lg transition-colors shadow hover:shadow-md flex items-center gap-2 hidden">
+                        <i class="fas fa-undo"></i>
+                        撤回
+                    </button>
+                    <button id="save-expense-details-btn"
+                        class="bg-primary hover:bg-primary/90 text-white font-bold py-2 px-6 rounded-lg transition-colors shadow hover:shadow-md flex items-center gap-2">
+                        <i class="fas fa-save"></i>
+                        保存
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 图片查看模态框 -->
+        <div id="image-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 hidden">
+            <div class="bg-white rounded-lg p-4 max-w-4xl max-h-[80vh] overflow-auto">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-bold">图片查看</h3>
+                    <button onclick="closeImages()" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                <div id="image-gallery" class="grid grid-cols-3 gap-2">
+                    <!-- 图片将通过JS动态加载 -->
+                </div>
+            </div>
+        </div>
+
+        <script>
+            // 初始化flatpickr日期选择器
+            const datePicker = flatpickr("#日期", {
+                locale: "zh",
+                dateFormat: "Y-m-d",
+                defaultDate: new Date(),
+                maxDate: new Date(),
+                allowInput: false,
+                clickOpens: true,
+                theme: "material_blue"
+            });
+
+            // 加载指定日期的数据
+            async function loadDailyData(date) {
+                try {
+                    const response = await fetch(`/get_daily_data?date=${date}`);
+                    const data = await response.json();
+
+                    if (data.exists) {
+                        // 如果当天有记录，填充表单
+                        document.getElementById('剩余银币').value = data.剩余银币 || 0;
+                        document.getElementById('消耗银币').value = data.消耗银币 || 0;
+                    } else {
+                        // 如果当天没有记录，清空表单
+                        document.getElementById('剩余银币').value = '';
+                        document.getElementById('消耗银币').value = '';
+                    }
+                } catch (error) {
+                    console.error('加载当天数据失败:', error);
+                }
+            }
+
+            // 页面加载完成后初始化
+            document.addEventListener('DOMContentLoaded', function () {
+                const today = datePicker.formatDate(new Date(), "Y-m-d");
+                loadDailyData(today);
+                loadDataTable();
+                loadWeeklyGuardInputs();
+                loadCheckboxes(today);
+                // 初始化时也更新可编辑状态
+                setTimeout(() => {
+                    updateCheckboxEditable(today);
+                }, 100);
+            });
+
+            // 监听日期变化事件
+            datePicker.config.onChange.push(function (selectedDates, dateStr) {
+                loadDailyData(dateStr);
+                loadCheckboxes(dateStr);
+            });
+
+            // 存储checkbox状态
+            let checkboxStates = {
+                修炼瓶: false,
+                保卫门派: false
+            };
+            
+            // 检查日期是否是今天
+            function isToday(dateStr) {
+                const today = new Date();
+                const selectedDate = new Date(dateStr);
+                return today.toDateString() === selectedDate.toDateString();
+            }
+
+            // 加载checkbox状态
+            async function loadCheckboxes(date) {
+                try {
+                    const response = await fetch(`/get_checkboxes?date=${date}`);
+                    const data = await response.json();
+                    
+                    if (data.exists) {
+                        // 如果当天有记录，设置状态
+                        checkboxStates.修炼瓶 = data.修炼瓶 === 'true' || data.修炼瓶 === true;
+                        checkboxStates.保卫门派 = data.保卫门派 === 'true' || data.保卫门派 === true;
+                    } else {
+                        // 如果当天没有记录，重置状态
+                        checkboxStates.修炼瓶 = false;
+                        checkboxStates.保卫门派 = false;
+                    }
+                    
+                    // 更新红绿灯显示和可编辑状态
+                    updateCheckboxLights();
+                    updateCheckboxEditable(date);
+                } catch (error) {
+                    console.error('加载checkbox状态失败:', error);
+                }
+            }
+            
+            // 更新checkbox的可编辑状态
+            function updateCheckboxEditable(date) {
+                const 修炼瓶Div = document.querySelector('[ondblclick="toggleCheckbox(\'修炼瓶\')"]');
+                const 保卫门派Div = document.querySelector('[ondblclick="toggleCheckbox(\'保卫门派\')"]');
+                
+                const canEdit = isToday(date);
+                
+                if (canEdit) {
+                    // 可以编辑
+                    if (修炼瓶Div) {
+                        修炼瓶Div.style.cursor = 'pointer';
+                        修炼瓶Div.style.opacity = '1';
+                    }
+                    if (保卫门派Div) {
+                        保卫门派Div.style.cursor = 'pointer';
+                        保卫门派Div.style.opacity = '1';
+                    }
+                } else {
+                    // 不可编辑
+                    if (修炼瓶Div) {
+                        修炼瓶Div.style.cursor = 'not-allowed';
+                        修炼瓶Div.style.opacity = '0.6';
+                    }
+                    if (保卫门派Div) {
+                        保卫门派Div.style.cursor = 'not-allowed';
+                        保卫门派Div.style.opacity = '0.6';
+                    }
+                }
+            }
+
+            // 更新红绿灯显示
+            function updateCheckboxLights() {
+                const 修炼瓶Light = document.getElementById('light-修炼瓶');
+                const 保卫门派Light = document.getElementById('light-保卫门派');
+                
+                // 修炼瓶
+                if (checkboxStates.修炼瓶) {
+                    修炼瓶Light.className = 'inline-block w-4 h-4 rounded-full bg-green-500 relative';
+                    修炼瓶Light.innerHTML = '<span class="absolute inset-0 rounded-full bg-green-400 blur-sm opacity-70"></span>';
+                } else {
+                    修炼瓶Light.className = 'inline-block w-4 h-4 rounded-full bg-red-500 relative';
+                    修炼瓶Light.innerHTML = '<span class="absolute inset-0 rounded-full bg-red-400 blur-sm opacity-70"></span>';
+                }
+                
+                // 保卫门派
+                if (checkboxStates.保卫门派) {
+                    保卫门派Light.className = 'inline-block w-4 h-4 rounded-full bg-green-500 relative';
+                    保卫门派Light.innerHTML = '<span class="absolute inset-0 rounded-full bg-green-400 blur-sm opacity-70"></span>';
+                } else {
+                    保卫门派Light.className = 'inline-block w-4 h-4 rounded-full bg-red-500 relative';
+                    保卫门派Light.innerHTML = '<span class="absolute inset-0 rounded-full bg-red-400 blur-sm opacity-70"></span>';
+                }
+            }
+
+            // 切换checkbox状态并自动保存
+            async function toggleCheckbox(name) {
+                const date = document.getElementById('日期').value;
+                
+                if (!date) {
+                    showToast('请先选择日期', 'error');
+                    return;
+                }
+                
+                // 检查是否是今天，只有今天可以编辑
+                if (!isToday(date)) {
+                    showToast('只能编辑当天的状态', 'error');
+                    return;
+                }
+                
+                // 切换状态
+                checkboxStates[name] = !checkboxStates[name];
+                
+                // 更新显示
+                updateCheckboxLights();
+                
+                // 自动保存
+                try {
+                    const response = await fetch('/save_checkboxes', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ 
+                            date, 
+                            修炼瓶: checkboxStates.修炼瓶.toString(),
+                            保卫门派: checkboxStates.保卫门派.toString()
+                        })
+                    });
+
+                    const result = await response.json();
+                    if (result.success) {
+                        showToast('保存成功');
+                    } else {
+                        showToast('保存失败: ' + result.message, 'error');
+                        // 恢复状态
+                        checkboxStates[name] = !checkboxStates[name];
+                        updateCheckboxLights();
+                    }
+                } catch (error) {
+                    console.error('保存checkbox状态失败:', error);
+                    showToast('保存失败，请重试', 'error');
+                    // 恢复状态
+                    checkboxStates[name] = !checkboxStates[name];
+                    updateCheckboxLights();
+                }
+            }
+
+            // 检查指定日期是否有图片
+            async function checkDailyImages(date) {
+                try {
+                    const response = await fetch(`/get_images?date=${date}`);
+                    const data = await response.json();
+                    const images = Array.isArray(data) ? data : data.files || [];
+                    return images.length > 0;
+                } catch (error) {
+                    console.error('检查图片失败:', error);
+                    return false;
+                }
+            }
+
+            let currentWeekOffset = 0; // 当前查看的周偏移量，0表示本周，-1表示上周，1表示下周
+
+            // 加载数据表格
+            async function loadDataTable() {
+                try {
+                    const response = await fetch('/data');
+                    const data = await response.json();
+
+                    // 使用兼容的数据字段名
+                    const records = data.records || data.data || [];
+
+                    // 获取指定周的起始和结束日期
+                    function getWeekRange(weekOffset) {
+                        const today = new Date();
+                        const currentDay = today.getDay();
+                        const diff = currentDay === 0 ? -6 : 1 - currentDay; // 调整到本周一
+
+                        const monday = new Date(today);
+                        monday.setDate(today.getDate() + diff + (weekOffset * 7));
+                        monday.setHours(0, 0, 0, 0);
+
+                        const sunday = new Date(monday);
+                        sunday.setDate(monday.getDate() + 6);
+                        sunday.setHours(23, 59, 59, 999);
+
+                        return { start: monday, end: sunday };
+                    }
+
+                    const weekRange = getWeekRange(currentWeekOffset);
+
+                    // 过滤指定周的数据
+                    const currentWeekData = records.filter(record => {
+                        const recordDate = new Date(record.日期);
+                        return recordDate >= weekRange.start && recordDate <= weekRange.end;
+                    }).sort((a, b) => new Date(a.日期) - new Date(b.日期));
+
+                    // 更新统计信息（按新要求计算）
+                    // 总收益银币：最新一天的剩余银币加上总消耗银币
+                    const sortedRecords = [...records].sort((a, b) => new Date(b.日期) - new Date(a.日期));
+                    const latestSilver = sortedRecords.length > 0 ? parseFloat(sortedRecords[0].剩余银币) || 0 : 0;
+                    const totalExpense = records.reduce((sum, record) => sum + (parseFloat(record.消耗银币) || 0), 0);
+                    const totalProfitSilver = latestSilver + totalExpense;
+
+                    // 日平均收益：每天收益的总和除以记录天数
+                    const dailyProfits = records.map(record => parseFloat(record.今日收益) || 0);
+                    const totalProfit = dailyProfits.reduce((sum, profit) => sum + profit, 0);
+                    const recordDays = records.length;
+                    const averageDaily = recordDays > 0 ? Math.round(totalProfit / recordDays) : 0;
+
+                    // 日最高收益：所有记录中的最大收益
+                    const maxDailyIncome = dailyProfits.length > 0 ? Math.max(...dailyProfits) : 0;
+
+                    // 计算周最高收益
+                    function calculateWeeklyMax(records) {
+                        const weeklyData = {};
+                        records.forEach(record => {
+                            const date = new Date(record.日期);
+                            const year = date.getFullYear();
+                            const week = getWeekNumber(date);
+                            const key = `${year}-W${week}`;
+                            const profit = parseFloat(record.今日收益) || 0;
+
+                            if (!weeklyData[key]) {
+                                weeklyData[key] = 0;
+                            }
+                            weeklyData[key] += profit;
+                        });
+
+                        const weeklyProfits = Object.values(weeklyData);
+                        return weeklyProfits.length > 0 ? Math.max(...weeklyProfits) : 0;
+                    }
+
+                    // 计算月最高收益
+                    function calculateMonthlyMax(records) {
+                        const monthlyData = {};
+                        records.forEach(record => {
+                            const date = new Date(record.日期);
+                            const year = date.getFullYear();
+                            const month = date.getMonth() + 1;
+                            const key = `${year}-${month.toString().padStart(2, '0')}`;
+                            const profit = parseFloat(record.今日收益) || 0;
+
+                            if (!monthlyData[key]) {
+                                monthlyData[key] = 0;
+                            }
+                            monthlyData[key] += profit;
+                        });
+
+                        const monthlyProfits = Object.values(monthlyData);
+                        return monthlyProfits.length > 0 ? Math.max(...monthlyProfits) : 0;
+                    }
+
+                    // 获取ISO周数
+                    function getWeekNumber(date) {
+                        const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+                        const dayNum = d.getUTCDay() || 7;
+                        d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+                        const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+                        return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+                    }
+
+                    const maxWeeklyIncome = calculateWeeklyMax(records);
+                    const maxMonthlyIncome = calculateMonthlyMax(records);
+
+                    document.getElementById('total-silver').textContent = totalProfitSilver.toLocaleString();
+                    document.getElementById('total-expense').textContent = totalExpense.toLocaleString();
+                    document.getElementById('average-daily-income').textContent = averageDaily.toLocaleString();
+                    document.getElementById('record-days').textContent = recordDays.toLocaleString();
+                    document.getElementById('max-daily-income').textContent = maxDailyIncome.toLocaleString();
+                    document.getElementById('max-weekly-income').textContent = maxWeeklyIncome.toLocaleString();
+                    document.getElementById('max-monthly-income').textContent = maxMonthlyIncome.toLocaleString();
+
+                    // 填充数据表格
+                    const tbody = document.getElementById('data-table-body');
+                    tbody.innerHTML = '';
+
+                    // 计算月平均
+                    const monthAvg = calculateMonthlyAverage(records);
+
+                    // 预加载有消耗详情的日期
+                    await loadDatesWithExpenseDetails();
+                    
+                    // 使用Promise.all并行检查所有日期的图片
+                    const imageChecks = await Promise.all(
+                        currentWeekData.map(record => checkDailyImages(record.日期))
+                    );
+
+                    // 计算每个星期几的平均收入
+                    function calculateWeekdayAverage(records) {
+                        const weekdayData = {1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: []}; // 1=周一, 7=周日
+                        const weekdayAverage = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0};
+
+                        records.forEach(record => {
+                            const date = new Date(record.日期);
+                            const dayOfWeek = date.getDay() || 7; // 0是周日，转为7
+                            const profit = parseFloat(record.今日收益) || 0;
+                            if (profit > 0) { // 只考虑有收益的记录
+                                weekdayData[dayOfWeek].push(profit);
+                            }
+                        });
+
+                        // 计算平均值
+                        for (let day = 1; day <= 7; day++) {
+                            const profits = weekdayData[day];
+                            if (profits.length > 0) {
+                                const sum = profits.reduce((acc, val) => acc + val, 0);
+                                weekdayAverage[day] = Math.round(sum / profits.length);
+                            }
+                        }
+
+                        return weekdayAverage;
+                    }
+
+                    const weekdayAverages = calculateWeekdayAverage(records);
+
+                    function getMonthWeekdaySeries(records, targetDate) {
+                        const d = new Date(targetDate);
+                        const y = d.getFullYear();
+                        const m = d.getMonth();
+                        const w = d.getDay() || 7;
+                        const series = [];
+                        records.forEach(r => {
+                            const rd = new Date(r.日期);
+                            if (rd.getFullYear() === y && rd.getMonth() === m && (rd.getDay() || 7) === w) {
+                                const val = parseFloat(r.今日收益) || 0;
+                                if (val > 0) series.push({ date: rd, value: val });
+                            }
+                        });
+                        series.sort((a,b) => a.date - b.date);
+                        return series.map(s => s.value);
+                    }
+
+                    function getSeriesAverage(series) {
+                        if (!series || series.length === 0) return 0;
+                        const sum = series.reduce((acc, v) => acc + v, 0);
+                        return Math.round(sum / series.length);
+                    }
+
+                    function renderSparkline(series, width = 80, height = 24) {
+                        if (!series || series.length === 0) {
+                            return `<svg class="sparkline" width="${width}" height="${height}"></svg>`;
+                        }
+                        const min = Math.min(...series);
+                        const max = Math.max(...series);
+                        const n = series.length;
+                        const stepX = width / Math.max(1, n - 1);
+                        const scaleY = max === min ? 1 : (height - 4) / (max - min);
+                        const points = series.map((v, i) => {
+                            const x = Math.round(i * stepX);
+                            const y = Math.round(height - 2 - (v - min) * scaleY);
+                            return `${x},${y}`;
+                        }).join(' ');
+                        return `<svg class="sparkline" width="${width}" height="${height}"><polyline points="${points}"/></svg>`;
+                    }
+
+                    currentWeekData.forEach((record, index) => {
+                        const tr = document.createElement('tr');
+                        const date = new Date(record.日期);
+                        const dayOfWeek = date.getDay() || 7; // 0是周日，转为7
+
+                        const hasImages = imageChecks[index];
+                        const imageButton = hasImages ?
+                            `<button onclick="showImages('${record.日期}')" class="text-blue-500 hover:text-blue-700 hover:scale-110 transition-transform text-sm">
+                            <i class="fas fa-image"></i>
+                        </button>` : '';
+
+                        // 计算收益对比效果 - 增强处理逻辑，确保空值时显示0
+                        const todayProfit = typeof record.今日收益 === 'undefined' || record.今日收益 === null || record.今日收益 === '' ? 0 : parseFloat(record.今日收益) || 0;
+                        
+                        // 判断是否有消耗详情
+                        const hasDetail = hasExpenseDetails(record.日期);
+                        const detailIcon = hasDetail ? 
+                            `<i class="fas fa-comment text-gray-500 mr-1"></i>` : '';
+                        
+                        // 比较当天收益与该星期几的平均收入
+                        const weekdayAverage = weekdayAverages[dayOfWeek];
+                        let trendIcon = '';
+                        if (todayProfit > 0) { // 只对有收益的记录显示趋势图标
+                            if (weekdayAverage > 0) { // 确保有足够的历史数据
+                                const weekdayText = '一二三四五六日'[dayOfWeek - 1];
+                                if (todayProfit > weekdayAverage) {
+                                    trendIcon = `<i class="fas fa-arrow-trend-up mr-1 animate-pulse"></i>`;
+                                } else if (todayProfit < weekdayAverage) {
+                                    trendIcon = `<i class="fas fa-arrow-trend-down mr-1 animate-pulse"></i>`;
+                                } else {
+                                    trendIcon = `<i class="fas fa-minus mr-1"></i>`;
+                                }
+                            }
+                        }
+
+                        const monthSeries = getMonthWeekdaySeries(records, record.日期);
+                        const monthAvgSameWeek = getSeriesAverage(monthSeries);
+                        const sparklineStr = renderSparkline(monthSeries);
+
+                        tr.className = 'hover:bg-gray-50 transition-colors';
+                        tr.innerHTML = `
+                        <td style="min-width: 160px; max-width: 160px;" class="px-1 py-1.5 text-xs xl:text-sm font-bold text-gray-900 cursor-pointer hover:bg-gray-100 transition-colors border border-dashed border-gray-200" ondblclick="jumpToDate('${record.日期}')">
+                            <div class="flex items-center justify-between gap-1">
+                                <div class="flex items-center flex-wrap gap-1">
+                                    <span class="week-day-${dayOfWeek} px-1 py-0.5 rounded-full text-xs font-bold shadow-sm whitespace-nowrap">
+                                        周${'一二三四五六日'[dayOfWeek - 1]}
+                                    </span>
+                                    <span class="text-gray-900 font-semibold text-xs xl:text-sm whitespace-nowrap">${record.日期}</span>
+                                </div>
+                                <span class="flex-shrink-0">${imageButton}</span>
+                            </div>
+                        </td>
+                        <td style="min-width: 100px; max-width: 100px;" class="px-1 py-1.5 text-xs xl:text-sm font-bold ${getAmountClass(parseFloat(record.剩余银币 || 0), 'remaining')} text-right border border-dashed border-gray-200">
+                            <span class="whitespace-nowrap tabular-nums">${record.剩余银币.toLocaleString()}</span>
+                        </td>
+                        <td style="min-width: 100px; max-width: 100px; cursor: pointer;" class="px-1 py-1.5 text-xs xl:text-sm font-bold ${getAmountClass(parseFloat(record.消耗银币 || 0), 'expense')} border border-dashed border-gray-200" ondblclick="openExpenseDetails('${record.日期}', ${record.消耗银币 || 0})">
+                            <div class="flex items-center justify-between">
+                                <span class="flex-shrink-0">${detailIcon || '<i class="fas fa-coins text-gray-400"></i>'}</span>
+                                <span class="whitespace-nowrap text-right tabular-nums">${record.消耗银币 || 0}</span>
+                            </div>
+                        </td>
+                        <td style="min-width: 90px; max-width: 90px;" class="px-1 py-1.5 text-xs xl:text-sm font-bold border border-dashed border-gray-200" onclick="openProfitDetail('${record.日期}')">
+                            <div class="flex items-center justify-between ${getAmountClass(todayProfit, 'profit-container')} rounded px-1">
+                                <span class="flex-shrink-0">${trendIcon || '<i class="fas fa-chart-line"></i>'}</span>
+                                <span class="whitespace-nowrap text-right tabular-nums">${(!isNaN(todayProfit) ? todayProfit : "0").toLocaleString()}</span>
+                            </div>
+                        </td>
+
+                    `;
+                        tbody.appendChild(tr);
+                    });
+
+                    // 显示当前周范围和翻页控制
+                    const weekDisplay = document.getElementById('week-display');
+                    const weekText = getWeekText(currentWeekOffset);
+                    const weekRecords = getWeekRecords(records, currentWeekOffset);
+                    const weeklyIncome = calculateWeeklyIncome(weekRecords);
+
+                    // 检查上一周和下一周是否有数据
+                    const prevWeekRecords = getWeekRecords(records, currentWeekOffset - 1);
+                    const nextWeekRecords = getWeekRecords(records, currentWeekOffset + 1);
+
+                    const prevDisabled = prevWeekRecords.length === 0;
+                    const nextDisabled = nextWeekRecords.length === 0;
+
+                    if (!weekDisplay) {
+                        const header = document.querySelector('#data-table').parentElement.querySelector('h2');
+                        const weekInfo = document.createElement('div');
+                        weekInfo.id = 'week-display';
+                        weekInfo.className = 'flex justify-between items-center text-sm';
+                        weekInfo.innerHTML = `
+                        <div class="text-gray-600">${weekText}</div>
+                        <div class="flex items-center justify-between w-full">
+                            <div class="flex items-center space-x-2">
+                                <div class="text-base font-bold bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 text-white px-3 py-1 rounded-full shadow-lg animate-pulse">
+                                    💰 ${weeklyIncome.toLocaleString()}
+                                </div>
+                                <div class="text-base font-bold bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 text-white px-3 py-1 rounded-full shadow-lg animate-pulse">
+                                    📊 ${calculateWeeklyTotal(weekRecords).toLocaleString()}
+                                </div>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button onclick="changeWeek(-1)" class="px-4 py-2 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors ${prevDisabled ? 'opacity-50 cursor-not-allowed' : ''}" ${prevDisabled ? 'disabled' : ''}>
+                                    <i class="fas fa-chevron-left mr-1"></i>
+                                </button>
+                                <button onclick="changeWeek(0)" class="px-4 py-2 text-sm bg-green-500 text-white rounded hover:bg-green-600 transition-colors">
+                                    <i class="fas fa-home mr-1"></i>
+                                </button>
+                                <button onclick="changeWeek(1)" class="px-4 py-2 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors ${nextDisabled ? 'opacity-50 cursor-not-allowed' : ''}" ${nextDisabled ? 'disabled' : ''}>
+                                    <i class="fas fa-chevron-right ml-1"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                        header.parentElement.insertBefore(weekInfo, header.nextSibling);
+                    } else {
+                        weekDisplay.innerHTML = `
+                        <div class="text-gray-600">${weekText}</div>
+                        <div class="flex items-center justify-between w-full">
+                            <div class="flex items-center space-x-2">
+                                <div class="text-base font-bold bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 text-white px-3 py-1 rounded-full shadow-lg animate-pulse">
+                                    💰 ${weeklyIncome.toLocaleString()}
+                                </div>
+                                <div class="text-base font-bold bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 text-white px-3 py-1 rounded-full shadow-lg animate-pulse">
+                                    📊 ${calculateWeeklyTotal(weekRecords).toLocaleString()}
+                                </div>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button onclick="changeWeek(-1)" class="px-4 py-2 text-base bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors ${prevDisabled ? 'opacity-50 cursor-not-allowed' : ''}" ${prevDisabled ? 'disabled' : ''}>
+                                    <i class="fas fa-chevron-left mr-1"></i>
+                                </button>
+                                <button onclick="changeWeek(0)" class="px-4 py-2 text-base bg-green-500 text-white rounded hover:bg-green-600 transition-colors">
+                                    <i class="fas fa-home mr-1"></i>
+                                </button>
+                                <button onclick="changeWeek(1)" class="px-4 py-2 text-base bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors ${nextDisabled ? 'opacity-50 cursor-not-allowed' : ''}" ${nextDisabled ? 'disabled' : ''}>
+                                    <i class="fas fa-chevron-right ml-1"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    }
+                } catch (error) {
+                    console.error('加载数据表格失败:', error);
+                }
+            }
+
+            // 获取周的文本描述
+            function getWeekText(weekOffset) {
+                const today = new Date();
+                const currentDay = today.getDay();
+                const diff = currentDay === 0 ? -6 : 1 - currentDay;
+
+                const monday = new Date(today);
+                monday.setDate(today.getDate() + diff + (weekOffset * 7));
+                monday.setHours(0, 0, 0, 0);
+
+                const sunday = new Date(monday);
+                sunday.setDate(monday.getDate() + 6);
+                sunday.setHours(23, 59, 59, 999);
+
+                if (weekOffset === 0) {
+                    return `本周：${monday.toLocaleDateString('zh-CN')} - ${sunday.toLocaleDateString('zh-CN')}`;
+                } else if (weekOffset === -1) {
+                    return `上周：${monday.toLocaleDateString('zh-CN')} - ${sunday.toLocaleDateString('zh-CN')}`;
+                } else if (weekOffset === 1) {
+                    return `下周：${monday.toLocaleDateString('zh-CN')} - ${sunday.toLocaleDateString('zh-CN')}`;
+                } else if (weekOffset < 0) {
+                    return `${Math.abs(weekOffset)}周前：${monday.toLocaleDateString('zh-CN')} - ${sunday.toLocaleDateString('zh-CN')}`;
+                } else {
+                    return `${weekOffset}周后：${monday.toLocaleDateString('zh-CN')} - ${sunday.toLocaleDateString('zh-CN')}`;
+                }
+            }
+
+            // 计算当前页的周收益（当前页总收益除以当前页数据条数）
+            function calculateWeeklyIncome(weekRecords) {
+                if (!weekRecords || weekRecords.length === 0) return 0;
+
+                let totalWeekIncome = 0;
+                weekRecords.forEach(record => {
+                    const todayProfit = parseFloat(record.今日收益) || 0;
+                    totalWeekIncome += todayProfit;
+                });
+
+                return Math.round(totalWeekIncome / weekRecords.length);
+            }
+
+            // 计算当前页的周总收益
+            function calculateWeeklyTotal(weekRecords) {
+                if (!weekRecords || weekRecords.length === 0) return 0;
+
+                let totalWeekIncome = 0;
+                weekRecords.forEach(record => {
+                    const todayProfit = parseFloat(record.今日收益) || 0;
+                    totalWeekIncome += todayProfit;
+                });
+
+                return Math.round(totalWeekIncome);
+            }
+
+            // 计算月平均收益
+            function calculateMonthlyAverage(records) {
+                if (!records || records.length === 0) return 0;
+
+                let totalIncome = 0;
+                let dayCount = 0;
+
+                records.forEach(record => {
+                    const todayProfit = parseFloat(record.今日收益) || 0;
+                    totalIncome += todayProfit;
+                    dayCount++;
+                });
+
+                return Math.round(totalIncome / dayCount);
+            }
+
+            // 获取指定周的数据
+            function getWeekRecords(records, weekOffset) {
+                const today = new Date();
+                const currentDay = today.getDay();
+                const diff = currentDay === 0 ? -6 : 1 - currentDay;
+
+                const monday = new Date(today);
+                monday.setDate(today.getDate() + diff + (weekOffset * 7));
+                monday.setHours(0, 0, 0, 0);
+
+                const sunday = new Date(monday);
+                sunday.setDate(monday.getDate() + 6);
+                sunday.setHours(23, 59, 59, 999);
+
+                return records.filter(record => {
+                    const recordDate = new Date(record.日期);
+                    return recordDate >= monday && recordDate <= sunday;
+                }).sort((a, b) => new Date(a.日期) - new Date(b.日期));
+            }
+
+            function getWeekRangeDates(weekOffset) {
+                const today = new Date();
+                const currentDay = today.getDay();
+                const diff = currentDay === 0 ? -6 : 1 - currentDay;
+                const monday = new Date(today);
+                monday.setDate(today.getDate() + diff + (weekOffset * 7));
+                monday.setHours(0, 0, 0, 0);
+                const sunday = new Date(monday);
+                sunday.setDate(monday.getDate() + 6);
+                sunday.setHours(23, 59, 59, 999);
+                const start = `${monday.getFullYear()}-${String(monday.getMonth()+1).padStart(2,'0')}-${String(monday.getDate()).padStart(2,'0')}`;
+                const end = `${sunday.getFullYear()}-${String(sunday.getMonth()+1).padStart(2,'0')}-${String(sunday.getDate()).padStart(2,'0')}`;
+                return { start, end };
+            }
+
+            async function loadWeeklyGuardInputs() {
+                const range = getWeekRangeDates(currentWeekOffset);
+                const res = await fetch(`/weekly_guard_inputs?start=${range.start}&end=${range.end}`);
+                const data = await res.json();
+                renderWeeklyGuardInputs(data.items || []);
+            }
+
+            function renderWeeklyGuardInputs(items) {
+                let container = document.getElementById('weekly-guard-list');
+                if (!container) return;
+                if (!items.length) {
+                    container.textContent = '';
+                    return;
+                }
+                container.innerHTML = items.map(it => {
+                    const isAdvanced = it.content && it.content.startsWith('高级');
+                    const iconName = isAdvanced ? '高级魔兽要诀' : it.content;
+                    const iconPath = `/image/Icon/${encodeURIComponent(iconName)}.png`;
+                    const datesStr = (it.dates || []).join(',');
+                    return `<span class=\"guard-chip\" data-content=\"${it.content}\" data-dates=\"${datesStr}\" onclick=\"openGuardDetail(this)\">\n`+
+                        `<img src=\"${iconPath}\" alt=\"${it.content}\" class=\"guard-icon\" onerror=\"this.style.display='none'\">\n`+
+                        `<span>${it.content} *${it.count}</span>\n`+
+                    `</span>`;
+                }).join('');
+            }
+
+            function openGuardDetail(el) {
+                const content = el.getAttribute('data-content') || '';
+                const datesStr = el.getAttribute('data-dates') || '';
+                const dates = datesStr ? datesStr.split(',').filter(Boolean) : [];
+                const isAdvanced = content.startsWith('高级');
+                const iconName = isAdvanced ? '高级魔兽要诀' : content;
+                const iconPath = `/image/Icon/${encodeURIComponent(iconName)}.png`;
+                const modal = document.getElementById('guard-detail-modal');
+                const iconEl = document.getElementById('guard-detail-icon');
+                const textEl = document.getElementById('guard-detail-text');
+                const datesEl = document.getElementById('guard-detail-dates');
+                iconEl.src = iconPath;
+                iconEl.style.display = '';
+                iconEl.onerror = function() { this.style.display = 'none'; };
+                textEl.textContent = `${content}`;
+                datesEl.textContent = dates.length ? `日期：${dates.join('、')}` : '';
+                modal.classList.add('show');
+            }
+
+            function closeGuardDetail() {
+                const modal = document.getElementById('guard-detail-modal');
+                modal.classList.remove('show');
+            }
+
+            async function openProfitDetail(dateStr) {
+                try {
+                    const resp = await fetch('/data');
+                    const data = await resp.json();
+                    const records = data.records || data.data || [];
+                const d = new Date(dateStr);
+                const w = d.getDay() || 7;
+                const series = [];
+                records.forEach(r => {
+                    const rd = new Date(r.日期);
+                    if ((rd.getDay() || 7) === w) {
+                        const val = parseFloat(r.今日收益) || 0;
+                        if (val > 0) series.push({ date: rd, value: val });
+                    }
+                });
+                    series.sort((a,b) => a.date - b.date);
+                    const values = series.map(s => s.value);
+                    const avg = values.length ? Math.round(values.reduce((a,b)=>a+b,0)/values.length) : 0;
+                    function renderSparkline(seriesVals, width = 160, height = 40) {
+                        if (!seriesVals || seriesVals.length === 0) return `<svg class="sparkline" width="${width}" height="${height}"></svg>`;
+                        const min = Math.min(...seriesVals);
+                        const max = Math.max(...seriesVals);
+                        const n = seriesVals.length;
+                        const stepX = width / Math.max(1, n - 1);
+                        const scaleY = max === min ? 1 : (height - 6) / (max - min);
+                        const points = seriesVals.map((v, i) => {
+                            const x = Math.round(i * stepX);
+                            const y = Math.round(height - 3 - (v - min) * scaleY);
+                            return `${x},${y}`;
+                        }).join(' ');
+                        return `<svg class="sparkline" width="${width}" height="${height}"><polyline points="${points}"/></svg>`;
+                    }
+                    const weekdayText = '一二三四五六日'[w - 1];
+                    document.getElementById('profit-detail-title').textContent = `周${weekdayText}走势`;
+                    document.getElementById('profit-detail-avg').textContent = `均值：${avg.toLocaleString()}`;
+                    document.getElementById('profit-detail-chart').innerHTML = renderSparkline(values);
+                    const modal = document.getElementById('profit-detail-modal');
+                    modal.classList.add('show');
+                } catch (e) {}
+            }
+
+            function closeProfitDetail() {
+                const modal = document.getElementById('profit-detail-modal');
+                modal.classList.remove('show');
+            }
+
+            async function openTopStats(type) {
+                try {
+                    const resp = await fetch('/data');
+                    const data = await resp.json();
+                    const records = data.records || data.data || [];
+                    let title = '';
+                    let itemsHtml = '';
+                    if (type === 'daily') {
+                        const arr = records.map(r => ({ date: r.日期, value: parseFloat(r.今日收益) || 0 }))
+                            .filter(x => x.value > 0)
+                            .sort((a,b) => b.value - a.value)
+                            .slice(0, 10);
+                        title = '日最高收益前十';
+                        itemsHtml = arr.map((x,i) => `
+                            <div class=\"top-item\">
+                                <div class=\"top-left\">
+                                    <div class=\"top-rank ${i<3?('r'+(i+1)):'rx'}\">${i+1}</div>
+                                    <div class=\"top-date\">${x.date}</div>
+                                </div>
+                                <div class=\"top-value\">${x.value.toLocaleString()}</div>
+                            </div>
+                        `).join('');
+                    } else if (type === 'weekly') {
+                        function getWeekNumber(date) {
+                            const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+                            const dayNum = d.getUTCDay() || 7;
+                            d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+                            const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+                            return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+                        }
+                        function getWeekRangeForDate(date) {
+                            const currentDay = date.getDay();
+                            const diff = currentDay === 0 ? -6 : 1 - currentDay;
+                            const monday = new Date(date);
+                            monday.setDate(date.getDate() + diff);
+                            monday.setHours(0,0,0,0);
+                            const sunday = new Date(monday);
+                            sunday.setDate(monday.getDate() + 6);
+                            sunday.setHours(23,59,59,999);
+                            return { start: monday, end: sunday };
+                        }
+                        const map = {};
+                        records.forEach(r => {
+                            const d = new Date(r.日期);
+                            const key = `${d.getFullYear()}-W${getWeekNumber(d)}`;
+                            const val = parseFloat(r.今日收益) || 0;
+                            if (!map[key]) {
+                                const range = getWeekRangeForDate(d);
+                                const start = `${range.start.getFullYear()}-${String(range.start.getMonth()+1).padStart(2,'0')}-${String(range.start.getDate()).padStart(2,'0')}`;
+                                const end = `${range.end.getFullYear()}-${String(range.end.getMonth()+1).padStart(2,'0')}-${String(range.end.getDate()).padStart(2,'0')}`;
+                                map[key] = { label: `${start} - ${end}`, value: 0 };
+                            }
+                            map[key].value += val;
+                        });
+                        const arr = Object.values(map).filter(x => x.value > 0).sort((a,b) => b.value - a.value).slice(0,10);
+                        title = '周最高收益前十';
+                        itemsHtml = arr.map((x,i) => `
+                            <div class=\"top-item\">
+                                <div class=\"top-left\">
+                                    <div class=\"top-rank ${i<3?('r'+(i+1)):'rx'}\">${i+1}</div>
+                                    <div class=\"top-date\">${x.label}</div>
+                                </div>
+                                <div class=\"top-value\">${x.value.toLocaleString()}</div>
+                            </div>
+                        `).join('');
+                    } else if (type === 'monthly') {
+                        const map = {};
+                        records.forEach(r => {
+                            const d = new Date(r.日期);
+                            const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+                            const val = parseFloat(r.今日收益) || 0;
+                            if (!map[key]) map[key] = 0;
+                            map[key] += val;
+                        });
+                        const arr = Object.entries(map).map(([label,value]) => ({ label, value })).filter(x => x.value > 0).sort((a,b)=>b.value-a.value).slice(0,10);
+                        title = '月最高收益前十';
+                        itemsHtml = arr.map((x,i) => `
+                            <div class=\"top-item\">
+                                <div class=\"top-left\">
+                                    <div class=\"top-rank ${i<3?('r'+(i+1)):'rx'}\">${i+1}</div>
+                                    <div class=\"top-date\">${x.label}</div>
+                                </div>
+                                <div class=\"top-value\">${x.value.toLocaleString()}</div>
+                            </div>
+                        `).join('');
+                    }
+                    document.getElementById('top-stats-title').textContent = title;
+                    document.getElementById('top-stats-list').innerHTML = itemsHtml || '';
+                    document.getElementById('top-stats-modal').classList.add('show');
+                } catch (e) {}
+            }
+
+            function closeTopStats() {
+                document.getElementById('top-stats-modal').classList.remove('show');
+            }
+
+            async function saveGuardInput() {
+                const date = document.getElementById('日期').value;
+                const input = document.getElementById('guard-content-input');
+                const content = (input.value || '').trim();
+                if (!date) {
+                    showToast('请先选择日期', 'error');
+                    return;
+                }
+                if (!content) {
+                    showToast('请输入内容', 'error');
+                    return;
+                }
+                const resp = await fetch('/save_guard_input', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ date, content })
+                });
+                const result = await resp.json();
+                if (result.success) {
+                    input.value = '';
+                    showToast('保存成功');
+                    await loadWeeklyGuardInputs();
+                } else {
+                    showToast('保存失败', 'error');
+                }
+            }
+
+            // 双击日期跳转到该日期进行编辑
+            function jumpToDate(dateStr) {
+                // 设置日期选择器的值
+                datePicker.setDate(dateStr);
+
+                // 加载该日期的数据
+                loadDailyData(dateStr);
+                
+                // 加载checkbox状态
+                loadCheckboxes(dateStr);
+
+                // 滚动到数据录入区域
+                document.querySelector('#add-form').scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+
+                // 添加视觉提示
+                const dateInput = document.getElementById('日期');
+                dateInput.classList.add('ring-2', 'ring-blue-500');
+                setTimeout(() => {
+                    dateInput.classList.remove('ring-2', 'ring-blue-500');
+                }, 2000);
+            }
+
+
+
+            // 切换周的函数
+            function changeWeek(offset) {
+                if (offset === 0) {
+                    currentWeekOffset = 0;
+                } else {
+                    currentWeekOffset += offset;
+                }
+                loadDataTable();
+                loadWeeklyGuardInputs();
+            }
+
+            // 加载备注数据
+            async function loadNotes() {
+                try {
+                    const response = await fetch('/get_notes');
+                    const notes = await response.json();
+
+                    // 保存当前状态为上次保存的状态
+                    previousNotesState = { ...notes };
+
+                    // 填充表单
+                    for (let i = 1; i <= 7; i++) {
+                        const noteKey = `note${i}`;
+                        const noteInput = document.getElementById(noteKey);
+                        if (noteInput && notes[noteKey] !== undefined) {
+                            noteInput.value = notes[noteKey];
+                            // 加载后显示预览
+                            previewNote(noteKey);
+                        }
+                    }
+
+                    // 显示撤回按钮（如果有上次保存的状态）
+                    const undoBtn = document.getElementById('undo-notes-btn');
+                    if (undoBtn && previousNotesState) {
+                        undoBtn.classList.remove('hidden');
+                    }
+                } catch (error) {
+                    console.error('加载备注失败:', error);
+                    // 可以在这里添加用户提示
+                }
+            }
+
+            // 验证并格式化备注数据
+            function validateAndFormatNote(noteText) {
+                if (!noteText) return { plainText: noteText, html: noteText };
+
+                // 检查是否是以逗号分隔的三段内容
+                const parts = noteText.split(',');
+                if (parts.length !== 3) {
+                    return { plainText: noteText, html: noteText }; // 格式不正确，返回原始文本
+                }
+
+                const [part1, part2, part3] = parts;
+
+                // 处理第一段（没有任何check）
+                let formattedPart1 = part1.trim();
+
+                // 处理第二段（必须是以/分割的三小段内容）
+                let plainPart2 = '';
+                let equipmentStatus = false; // 潜龙装备状态
+                let runeStatus = false; // 宠物符石状态
+
+                const subParts = part2.split('/');
+                if (subParts.length === 3) {
+                    const [subPart1, subPart2, subPart3] = subParts;
+                    plainPart2 = `${subPart1.trim()}/${subPart2.trim()}/${subPart3.trim()}`;
+
+                    // 检查第一个子部分是否满足条件
+                    const match1 = subPart1.trim().match(/(\d+)([\u4e00-\u9fa5]+)/);
+                    if (match1) {
+                        const num = parseInt(match1[1]);
+                        const unit = match1[2];
+
+                        if (unit === '攻' && num >= 53) {
+                            equipmentStatus = true;
+                        } else if (unit === '防' && num >= 40) {
+                            equipmentStatus = true;
+                        } else if (unit === '速' && num >= 32) {
+                            equipmentStatus = true;
+                        } else if (unit === '灵' && num >= 32) {
+                            equipmentStatus = true;
+                        }
+                    }
+
+                    // 检查第二个子部分是否满足条件（只要有一个满足就设为true）
+                    const match2 = subPart2.trim().match(/(\d+)([\u4e00-\u9fa5]+)/);
+                    if (match2 && match2[2] === '防' && parseInt(match2[1]) >= 66) {
+                        equipmentStatus = equipmentStatus && true;
+                    } else {
+                        equipmentStatus = false;
+                    }
+
+                    // 检查第三个子部分是否满足条件
+                    if (subPart3.trim().startsWith('6')) {
+                        runeStatus = true;
+                    }
+                } else {
+                    plainPart2 = part2.trim();
+                }
+
+                // 处理第三段（检查是否已觉醒）
+                let plainPart3 = part3.trim();
+                const isAwakened = plainPart3 === '已觉醒';
+
+                return {
+                    plainText: `${formattedPart1},${plainPart2},${plainPart3}`,
+                    equipmentStatus: equipmentStatus,
+                    runeStatus: runeStatus,
+                    isAwakened: isAwakened
+                };
+            }
+
+            // 加载宠物头像
+            function loadPetAvatar(noteId) {
+                const noteInput = document.getElementById(noteId);
+                const avatarElement = document.getElementById(`avatar-${noteId}`);
+                
+                if (noteInput && avatarElement) {
+                    const noteText = noteInput.value;
+                    
+                    if (noteText) {
+                        // 解析宠物名称
+                        const parts = noteText.split(',');
+                        if (parts.length >= 1) {
+                            const petName = parts[0].trim();
+                            // 尝试加载头像，使用服务器配置的路径
+                            const avatarPath = `/image/Icon/${petName}.png`;
+                            avatarElement.innerHTML = `<img src="${avatarPath}" alt="${petName}" class="w-full h-full object-cover" onerror="this.parentNode.innerHTML = '<div class=\'w-full h-full flex items-center justify-center bg-gray-100 text-gray-600 text-xs p-1 text-center\'>${petName}</div>';">`;
+                        } else {
+                            // 如果没有名称，显示空白
+                            avatarElement.innerHTML = '';
+                        }
+                    } else {
+                        // 如果输入为空，显示空白
+                        avatarElement.innerHTML = '';
+                    }
+                }
+            }
+            
+            // 预览备注格式
+            function previewNote(noteId) {
+                const noteInput = document.getElementById(noteId);
+                const previewElement = document.getElementById(`preview-${noteId}`);
+                
+                // 加载宠物头像
+                loadPetAvatar(noteId);
+
+                if (noteInput && previewElement) {
+                    const noteText = noteInput.value;
+                    const formattedResult = validateAndFormatNote(noteText);
+
+                    if (noteText) {
+                        // 检查格式是否正确
+                        const parts = noteText.split(',');
+                        if (parts.length === 3) {
+                            const subParts = parts[1].split('/');
+
+                            // 创建预览HTML
+                            let previewHTML = '';
+
+                            // 添加状态指示器 - 改为水平排列
+                            previewHTML += '<div class="flex items-center gap-4">';
+
+                            // 1. 潜龙装备状态
+                            const equipmentLight = formattedResult.equipmentStatus ?
+                                '<span class="inline-block w-4 h-4 rounded-full bg-green-500 relative"><span class="absolute inset-0 rounded-full bg-green-400 blur-sm opacity-70"></span></span>' :
+                                '<span class="inline-block w-4 h-4 rounded-full bg-red-500 relative"><span class="absolute inset-0 rounded-full bg-red-400 blur-sm opacity-70"></span></span>';
+                            previewHTML += `<div class="flex items-center gap-2">
+                             <span class="text-sm text-gray-700">装备</span>
+                             ${equipmentLight}
+                         </div>`;
+
+                            // 2. 宠物符石状态
+                            const runeLight = formattedResult.runeStatus ?
+                                '<span class="inline-block w-4 h-4 rounded-full bg-green-500 relative"><span class="absolute inset-0 rounded-full bg-green-400 blur-sm opacity-70"></span></span>' :
+                                '<span class="inline-block w-4 h-4 rounded-full bg-red-500 relative"><span class="absolute inset-0 rounded-full bg-red-400 blur-sm opacity-70"></span></span>';
+                            previewHTML += `<div class="flex items-center gap-2">
+                             <span class="text-sm text-gray-700">符石</span>
+                             ${runeLight}
+                         </div>`;
+
+                            // 3. 觉醒状态
+                            const awakenLight = formattedResult.isAwakened ?
+                                '<span class="inline-block w-4 h-4 rounded-full bg-green-500 relative"><span class="absolute inset-0 rounded-full bg-green-400 blur-sm opacity-70"></span></span>' :
+                                '<span class="inline-block w-4 h-4 rounded-full bg-red-500 relative"><span class="absolute inset-0 rounded-full bg-red-400 blur-sm opacity-70"></span></span>';
+                            previewHTML += `<div class="flex items-center gap-2">
+                              <span class="text-sm text-gray-700">觉醒</span>
+                              ${awakenLight}
+                          </div>`;
+
+                            previewHTML += '</div>';
+
+                            previewElement.innerHTML = previewHTML;
+                        } else {
+                            previewElement.innerHTML = '<div class="text-sm text-red-500">格式不正确，请使用: 名称,属性/属性/属性,觉醒状态</div>';
+                        }
+
+                        previewElement.style.display = 'block';
+                    } else {
+                        previewElement.style.display = 'none';
+                    }
+                }
+            }
+
+            // 添加输入框事件监听器
+            function addNoteInputListeners() {
+                for (let i = 1; i <= 7; i++) {
+                    const noteId = `note${i}`;
+                    const noteInput = document.getElementById(noteId);
+
+                    if (noteInput) {
+                        noteInput.addEventListener('input', function () {
+                            previewNote(noteId);
+                        });
+
+                        // 初始加载时也预览
+                        if (noteInput.value) {
+                            previewNote(noteId);
+                        }
+                    }
+                }
+            }
+
+            // 保存备注数据
+            async function saveNotes() {
+                try {
+                    // 收集表单数据
+                    const notesData = {};
+                    for (let i = 1; i <= 7; i++) {
+                        const noteKey = `note${i}`;
+                        const noteInput = document.getElementById(noteKey);
+                        if (noteInput) {
+                            // 验证并格式化备注
+                            const formattedNote = validateAndFormatNote(noteInput.value);
+                            notesData[noteKey] = formattedNote.plainText;
+                        }
+                    }
+
+                    // 发送到服务器
+                    const response = await fetch('/save_notes', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(notesData)
+                    });
+
+                    const result = await response.json();
+                    if (result.success) {
+                        console.log('潜龙在渊详情保存成功');
+                        // 保存成功后更新上次保存的状态
+                        previousNotesState = { ...notesData };
+                        // 可以在这里添加成功提示
+                        showToast('潜龙在渊详情保存成功');
+                    } else {
+                        console.error('潜龙在渊详情保存失败:', result.message);
+                        showToast('潜龙在渊详情保存失败: ' + result.message, 'error');
+                    }
+                } catch (error) {
+                    console.error('保存潜龙在渊详情时出错:', error);
+                    showToast('保存潜龙在渊详情时出错，请重试', 'error');
+                }
+            }
+
+            // 简单的提示框函数
+            function showToast(message, type = 'success') {
+                // 检查是否已存在toast元素
+                let toast = document.getElementById('toast-message');
+
+                if (!toast) {
+                    // 创建新的toast元素
+                    toast = document.createElement('div');
+                    toast.id = 'toast-message';
+                    toast.className = 'fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 transition-opacity duration-300 opacity-0';
+                    document.body.appendChild(toast);
+                }
+
+                // 设置消息内容和样式
+                toast.textContent = message;
+
+                // 根据类型设置不同的背景色
+                if (type === 'error') {
+                    toast.classList.remove('bg-green-500');
+                    toast.classList.add('bg-red-500');
+                } else {
+                    toast.classList.remove('bg-red-500');
+                    toast.classList.add('bg-green-500');
+                }
+                toast.classList.add('text-white', 'font-bold');
+
+                // 显示toast
+                toast.style.opacity = '1';
+
+                // 3秒后自动隐藏
+                setTimeout(() => {
+                    toast.style.opacity = '0';
+                }, 3000);
+            }
+
+            // 打开备注管理模态框
+            function openNotesModal() {
+                const modal = document.getElementById('notes-modal');
+                modal.classList.remove('hidden');
+
+                // 加载备注数据
+                loadNotes();
+            }
+
+            // 关闭备注管理模态框
+            function closeNotesModal() {
+                const modal = document.getElementById('notes-modal');
+
+                // 关闭模态框
+                modal.classList.add('hidden');
+            }
+
+            // 变量用于存储上次保存的状态
+            let previousNotesState = null;
+            let previousExpenseDetailsState = null;
+
+            // 备注撤回功能
+            function undoNotes() {
+                if (previousNotesState) {
+                    // 恢复到上次保存的状态
+                    for (let i = 1; i <= 7; i++) {
+                        const noteKey = `note${i}`;
+                        const noteInput = document.getElementById(noteKey);
+                        if (noteInput && previousNotesState[noteKey] !== undefined) {
+                            noteInput.value = previousNotesState[noteKey];
+                            previewNote(noteKey);
+                        }
+                    }
+                    showToast('已恢复到上次保存的状态');
+                }
+            }
+
+            // 消耗详情撤回功能
+            function undoExpenseDetails() {
+                if (previousExpenseDetailsState) {
+                    // 恢复到上次保存的状态
+                    document.getElementById('expense-details').value = previousExpenseDetailsState.details || '';
+                    showToast('已恢复到上次保存的状态');
+                }
+            }
+
+            // 注册事件监听器
+            document.addEventListener('DOMContentLoaded', function () {
+                // 打开备注模态框按钮
+                const openBtn = document.getElementById('open-notes-btn');
+                if (openBtn) {
+                    openBtn.addEventListener('click', openNotesModal);
+                }
+
+                // 关闭备注模态框按钮
+                const closeBtn = document.getElementById('close-notes-btn');
+                if (closeBtn) {
+                    closeBtn.addEventListener('click', closeNotesModal);
+                }
+
+                // 保存按钮
+                const saveBtn = document.getElementById('save-notes-btn');
+                if (saveBtn) {
+                    saveBtn.addEventListener('click', saveNotes);
+                }
+
+                const saveGuardBtn = document.getElementById('save-guard-content-btn');
+                if (saveGuardBtn) {
+                    saveGuardBtn.addEventListener('click', saveGuardInput);
+                }
+
+                const guardModal = document.getElementById('guard-detail-modal');
+                const guardClose = document.getElementById('guard-detail-close');
+                if (guardClose) {
+                    guardClose.addEventListener('click', closeGuardDetail);
+                }
+                if (guardModal) {
+                    guardModal.addEventListener('click', function(e) {
+                        if (e.target === guardModal) closeGuardDetail();
+                    });
+                }
+
+                const profitModal = document.getElementById('profit-detail-modal');
+                const profitClose = document.getElementById('profit-detail-close');
+                if (profitClose) {
+                    profitClose.addEventListener('click', closeProfitDetail);
+                }
+                if (profitModal) {
+                    profitModal.addEventListener('click', function(e) {
+                        if (e.target === profitModal) closeProfitDetail();
+                    });
+                }
+
+                const topStatsModal = document.getElementById('top-stats-modal');
+                const topStatsClose = document.getElementById('top-stats-close');
+                if (topStatsClose) {
+                    topStatsClose.addEventListener('click', closeTopStats);
+                }
+                if (topStatsModal) {
+                    topStatsModal.addEventListener('click', function(e) {
+                        if (e.target === topStatsModal) closeTopStats();
+                    });
+                }
+
+                const maxDaily = document.getElementById('max-daily-income');
+                const maxWeekly = document.getElementById('max-weekly-income');
+                const maxMonthly = document.getElementById('max-monthly-income');
+                if (maxDaily) maxDaily.addEventListener('click', () => openTopStats('daily'));
+                if (maxWeekly) maxWeekly.addEventListener('click', () => openTopStats('weekly'));
+                if (maxMonthly) maxMonthly.addEventListener('click', () => openTopStats('monthly'));
+
+                // 撤回备注按钮
+                const undoNotesBtn = document.getElementById('undo-notes-btn');
+                if (undoNotesBtn) {
+                    undoNotesBtn.addEventListener('click', undoNotes);
+                }
+
+                // 添加备注输入框事件监听器
+                addNoteInputListeners();
+
+                // 点击模态框背景关闭（自动保存并关闭）
+                const notesModal = document.getElementById('notes-modal');
+                if (notesModal) {
+                    notesModal.addEventListener('click', function (e) {
+                        if (e.target === notesModal) {
+                            closeNotesModal();
+                        }
+                    });
+                }
+
+                // ESC键关闭模态框
+                document.addEventListener('keydown', function (e) {
+                    if (e.key === 'Escape') {
+                        const notesModal = document.getElementById('notes-modal');
+                        const expenseModal = document.getElementById('expense-details-modal');
+                        const imageModal = document.getElementById('image-modal');
+
+                        if (notesModal && !notesModal.classList.contains('hidden')) {
+                            closeNotesModal();
+                        } else if (expenseModal && !expenseModal.classList.contains('hidden')) {
+                            closeExpenseDetailsModal();
+                        } else if (imageModal && !imageModal.classList.contains('hidden')) {
+                            closeImages();
+                        }
+                    }
+                });
+
+                // 关闭消耗详情模态框按钮
+                const closeExpenseBtn = document.getElementById('close-expense-details-btn');
+                if (closeExpenseBtn) {
+                    closeExpenseBtn.addEventListener('click', saveExpenseDetails);
+                }
+
+                // 保存消耗详情按钮
+                const saveExpenseBtn = document.getElementById('save-expense-details-btn');
+                if (saveExpenseBtn) {
+                    saveExpenseBtn.addEventListener('click', saveExpenseDetails);
+                }
+
+                // 撤回消耗详情按钮
+                const undoExpenseBtn = document.getElementById('undo-expense-details-btn');
+                if (undoExpenseBtn) {
+                    undoExpenseBtn.addEventListener('click', undoExpenseDetails);
+                }
+
+                // 点击背景关闭消耗详情模态框
+                document.getElementById('expense-details-modal').addEventListener('click', function (e) {
+                    if (e.target === this) {
+                        saveExpenseDetails();
+                    }
+                });
+
+                // ESC键关闭模态框
+                document.addEventListener('keydown', function (e) {
+                    if (e.key === 'Escape') {
+                        const notesModal = document.getElementById('notes-modal');
+                        const expenseModal = document.getElementById('expense-details-modal');
+                        const imageModal = document.getElementById('image-modal');
+
+                        if (!notesModal.classList.contains('hidden')) {
+                            closeNotesModal();
+                        } else if (!expenseModal.classList.contains('hidden')) {
+                            saveExpenseDetails();
+                        } else if (!imageModal.classList.contains('hidden')) {
+                            closeImages();
+                        }
+                    }
+                });
+
+                // 点击图片模态框背景关闭
+                document.getElementById('image-modal').addEventListener('click', function (e) {
+                    if (e.target === this) {
+                        closeImages();
+                    }
+                });
+
+                // 添加备注输入框的事件监听器
+                addNoteInputListeners();
+            });
+
+            // 图片相关功能
+            async function showImages(date) {
+                try {
+                    const response = await fetch(`/get_images?date=${date}`);
+                    const data = await response.json();
+                    const images = Array.isArray(data) ? data : data.files || [];
+
+                    const gallery = document.getElementById('image-gallery');
+                    gallery.innerHTML = '';
+
+                    if (images.length === 0) {
+                        gallery.innerHTML = '<p class="text-gray-500 text-center py-8">该日期没有图片</p>';
+                    } else {
+                        images.forEach(img => {
+                            const imgName = typeof img === 'string' ? img : img.filename || img.name;
+                            const imgElement = document.createElement('img');
+                            imgElement.src = `/${imgName}`;
+                            imgElement.alt = imgName;
+                            imgElement.className = 'cursor-pointer hover:opacity-75 transition-opacity max-w-full h-auto rounded';
+                            imgElement.onclick = () => showFullImage(`/${imgName}`);
+
+                            const container = document.createElement('div');
+                            container.className = 'relative p-2';
+                            container.appendChild(imgElement);
+
+                            gallery.appendChild(container);
+                        });
+                    }
+
+                    document.getElementById('image-modal').classList.remove('hidden');
+                } catch (error) {
+                    console.error('加载图片失败:', error);
+                    const gallery = document.getElementById('image-gallery');
+                    gallery.innerHTML = '<p class="text-red-500 text-center py-8">加载图片失败</p>';
+                    document.getElementById('image-modal').classList.remove('hidden');
+                }
+            }
+
+            function closeImages() {
+                document.getElementById('image-modal').classList.add('hidden');
+            }
+
+            function showFullImage(src) {
+                // 创建或获取预览容器
+                let previewContainer = document.getElementById('image-preview-container');
+                if (!previewContainer) {
+                    previewContainer = document.createElement('div');
+                    previewContainer.id = 'image-preview-container';
+                    previewContainer.className = 'fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-[60] cursor-zoom-out transition-all duration-300';
+                    previewContainer.onclick = function() {
+                        this.classList.add('opacity-0');
+                        setTimeout(() => this.remove(), 300);
+                    };
+                    document.body.appendChild(previewContainer);
+                    // 添加一个小延迟以确保过渡效果显示
+                    setTimeout(() => {
+                        previewContainer.style.opacity = '1';
+                    }, 10);
+                } else {
+                    previewContainer.innerHTML = '';
+                }
+                
+                // 创建图片元素
+                const img = document.createElement('img');
+                img.src = src;
+                img.className = 'max-w-[90%] max-h-[90vh] object-contain shadow-xl transition-transform duration-300 transform scale-95';
+                img.onload = function() {
+                    this.classList.remove('scale-95');
+                    this.classList.add('scale-100');
+                };
+                img.onclick = function(e) {
+                    e.stopPropagation(); // 防止点击图片时关闭预览
+                };
+                
+                previewContainer.appendChild(img);
+            }
+
+            // 根据银币数量设置颜色样式
+            function getSilverColorStyle(amount) {
+                const numStr = Math.abs(amount).toString();
+                const length = numStr.replace(/,/g, '').length;
+
+                if (length >= 9) {
+                    return 'color: red; font-size: 0.85em;'; // 9位数及以上显示红色并稍微缩小字体
+                } else if (length === 8) {
+                    return 'color: red; font-size: 0.9em;'; // 8位数显示红色并稍微缩小字体
+                } else if (length === 7) {
+                    return 'color: purple;'; // 7位数显示紫色
+                } else if (length === 6) {
+                    return 'color: orange;'; // 6位数显示橙色
+                } else if (length === 5) {
+                    return 'color: blue;'; // 5位数显示蓝色
+                }
+                return 'color: text-orange-600;'; // 默认颜色
+            }
+
+            // 根据金额和类型获取对应的样式类
+            function getAmountClass(amount, type = 'profit') {
+                // 不同类型使用不同的样式逻辑
+                if (type === 'remaining') {
+                    // 剩余列：根据数字位数显示不同颜色，不添加背景色
+                    const numStr = Math.abs(amount).toString();
+                    const length = numStr.replace(/,/g, '').length;
+                    
+                    if (length >= 8) {
+                        return 'text-red-600'; // 8位数及以上显示红色
+                    } else if (length === 7) {
+                        return 'text-purple-600'; // 7位数显示紫色
+                    } else if (length === 6) {
+                        return 'text-orange-600'; // 6位数显示橙色
+                    } else {
+                        return 'text-blue-600'; // 5位数及以下显示蓝色
+                    }
+                } else if (type === 'expense') {
+                    // 消耗列：不做颜色变化，始终为黑色
+                    return 'text-gray-900';
+                } else if (type === 'profit-container') {
+                    // 收益列容器：根据金额设置背景色，应用到整个容器
+                    let className = amount >= 0 ? 'text-white font-bold' : 'text-red-600';
+                    
+                    if (amount > 0) {
+                        if (amount > 200000) {
+                            className += ' bg-red-500'; // 超过20w显示红色背景
+                        } else if (amount > 100000) {
+                            className += ' bg-purple-500'; // 低于20w高于10w显示紫色背景
+                        } else {
+                            className += ' bg-gray-300 text-gray-800'; // 低于10w显示灰色背景
+                        }
+                    }
+                    
+                    return className;
+                } else {
+                    // 收益列：根据金额设置背景色（保留用于兼容）
+                    let className = amount >= 0 ? 'text-white font-bold' : 'text-red-600';
+                    
+                    if (amount > 0) {
+                        if (amount > 200000) {
+                            className += ' bg-red-500'; // 超过20w显示红色背景
+                        } else if (amount > 100000) {
+                            className += ' bg-purple-500'; // 低于20w高于10w显示紫色背景
+                        } else {
+                            className += ' bg-gray-300 text-gray-800'; // 低于10w显示灰色背景
+                        }
+                    }
+                    
+                    return className;
+                }
+            }
+            
+            // 存储有消耗详情的日期
+            const datesWithExpenseDetails = new Set();
+            
+            // 预加载有消耗详情的日期
+            async function loadDatesWithExpenseDetails() {
+                try {
+                    // 这里只是模拟，实际应用中应该从服务器获取有详情的日期列表
+                    const response = await fetch('/get_dates_with_expense_details');
+                    const data = await response.json();
+                    data.forEach(date => datesWithExpenseDetails.add(date));
+                } catch (error) {
+                    console.error('加载有消耗详情的日期失败:', error);
+                    // 如果获取失败，默认金额大于0的日期都有详情
+                    try {
+                        // 在错误处理中获取数据，确保records有定义
+                        const dataResponse = await fetch('/data');
+                        const data = await dataResponse.json();
+                        const records = data.records || data.data || [];
+                        records.forEach(record => {
+                            if (parseFloat(record.消耗银币 || 0) > 0) {
+                                datesWithExpenseDetails.add(record.日期);
+                            }
+                        });
+                    } catch (dataError) {
+                        console.error('获取数据失败:', dataError);
+                        // 如果仍然失败，则不添加任何日期
+                    }
+                }
+            }
+            
+            // 检查是否有消耗详情
+            function hasExpenseDetails(date) {
+                return datesWithExpenseDetails.has(date);
+            }
+
+            // 打开消耗详情模态框
+            function openExpenseDetails(date, amount) {
+                if (amount <= 0) return; // 当为0时双击没有效果
+
+                const modal = document.getElementById('expense-details-modal');
+                const expenseDate = document.getElementById('expense-date');
+                const expenseAmount = document.getElementById('expense-amount');
+                const expenseDetails = document.getElementById('expense-details');
+
+                // 设置日期和金额
+                expenseDate.value = date;
+                expenseAmount.value = amount.toLocaleString();
+
+                // 加载已保存的详情
+                loadExpenseDetails(date);
+
+                // 显示模态框
+                modal.classList.remove('hidden');
+            }
+
+            // 关闭消耗详情模态框
+            function closeExpenseDetailsModal() {
+                const modal = document.getElementById('expense-details-modal');
+                modal.classList.add('hidden');
+            }
+
+            // 加载消耗详情
+            async function loadExpenseDetails(date) {
+                try {
+                    const response = await fetch(`/get_expense_details?date=${date}`);
+                    const data = await response.json();
+
+                    // 保存当前状态为上次保存的状态
+                    previousExpenseDetailsState = {
+                        date: date,
+                        details: data.details || ''
+                    };
+
+                    if (data.details) {
+                        document.getElementById('expense-details').value = data.details;
+                    } else {
+                        document.getElementById('expense-details').value = '';
+                    }
+
+                    // 显示撤回按钮（如果有上次保存的状态）
+                    const undoBtn = document.getElementById('undo-expense-details-btn');
+                    if (undoBtn && previousExpenseDetailsState) {
+                        undoBtn.classList.remove('hidden');
+                    }
+                } catch (error) {
+                    console.error('加载消耗详情失败:', error);
+                    document.getElementById('expense-details').value = '';
+                }
+            }
+
+            // 保存消耗详情
+            async function saveExpenseDetails() {
+                const date = document.getElementById('expense-date').value;
+                const details = document.getElementById('expense-details').value;
+
+                try {
+                    const response = await fetch('/save_expense_details', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ date, details })
+                    });
+
+                    const result = await response.json();
+                    if (result.success) {
+                        // 保存成功后更新上次保存的状态
+                        previousExpenseDetailsState = { date, details };
+                        // 添加成功提示
+                        showToast('消耗详情保存成功');
+                        closeExpenseDetailsModal();
+                    } else {
+                        console.error('保存失败:', result.message);
+                    }
+                } catch (error) {
+                    console.error('保存消耗详情失败:', error);
+                }
+            }
+
+            // 表单提交处理
+            document.getElementById('add-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const 日期 = document.getElementById('日期').value;
+                const 剩余银币 = document.getElementById('剩余银币').value;
+                const 消耗银币 = document.getElementById('消耗银币').value;
+
+                // 先上传图片
+                const files = document.getElementById('图片上传').files;
+                if (files.length > 0) {
+                    for (let file of files) {
+                        const formData = new FormData();
+                        formData.append('image', file);
+                        formData.append('date', 日期);
+
+                        try {
+                            const response = await fetch('/upload', {
+                                method: 'POST',
+                                body: formData
+                            });
+                            const result = await response.json();
+                            if (!result.success) {
+                                console.error('图片上传失败:', result.message);
+                            }
+                        } catch (error) {
+                            console.error('图片上传失败:', error);
+                        }
+                    }
+                }
+
+                // 再提交数据
+                const response = await fetch('/add', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 日期, 剩余银币, 消耗银币 })
+                });
+
+                if (response.ok) {
+                    location.reload();
+                }
+            });
+        </script>
+
+        <!-- 引入Chart.js库 -->
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+        <!-- 收入消耗变化图表脚本 -->
+        <script>
+            // 绘制收入消耗变化图表
+            async function loadIncomeExpenseChart() {
+                try {
+                    // 获取所有数据
+                    const response = await fetch('/data');
+                    const data = await response.json();
+                    const records = data.records || data.data || [];
+
+                    // 按日期排序并取最近50条记录
+                    const sortedRecords = [...records].sort((a, b) => new Date(a.日期) - new Date(b.日期)).slice(-50);
+
+                    // 准备图表数据
+                    const dates = sortedRecords.map(record => {
+                        const date = new Date(record.日期);
+                        return `${date.getMonth() + 1}/${date.getDate()}`;
+                    });
+
+                    const incomeData = sortedRecords.map(record => parseFloat(record.今日收益) || 0);
+                    const expenseData = sortedRecords.map(record => parseFloat(record.消耗银币) || 0);
+
+                    // 创建图表
+                    const ctx = document.getElementById('incomeExpenseChart').getContext('2d');
+
+                    // 如果图表已存在，销毁它
+                    if (window.incomeExpenseChartInstance) {
+                        window.incomeExpenseChartInstance.destroy();
+                    }
+
+                    window.incomeExpenseChartInstance = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: dates,
+                            datasets: [
+                                {
+                                    label: '每日收入',
+                                    data: incomeData,
+                                    borderColor: '#10b981', // 绿色
+                                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                                    borderWidth: 2,
+                                    tension: 0.3,
+                                    fill: false
+                                },
+                                {
+                                    label: '每日消耗',
+                                    data: expenseData,
+                                    borderColor: '#f59e0b', // 橙色
+                                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                                    borderWidth: 2,
+                                    tension: 0.3,
+                                    fill: false
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        callback: function (value) {
+                                            return value.toLocaleString();
+                                        }
+                                    }
+                                },
+                                x: {
+                                    ticks: {
+                                        maxRotation: 45,
+                                        minRotation: 45,
+                                        autoSkip: true,
+                                        maxTicksLimit: 10
+                                    }
+                                }
+                            },
+                            plugins: {
+                                legend: {
+                                    position: 'top',
+                                    labels: {
+                                        font: {
+                                            size: 10
+                                        }
+                                    }
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function (context) {
+                                            let label = context.dataset.label || '';
+                                            if (label) {
+                                                label += ': ';
+                                            }
+                                            label += context.parsed.y.toLocaleString();
+                                            return label;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                } catch (error) {
+                    console.error('加载收入消耗图表失败:', error);
+                }
+            }
+
+            // 页面加载完成后初始化图表
+            document.addEventListener('DOMContentLoaded', function () {
+                // 等待DOM和数据加载完成后再绘制图表
+                setTimeout(loadIncomeExpenseChart, 1000);
+            });
+        </script>
+
+    <div class="cy227-preview-btn" id="cy227PreviewBtn">
+        <i class="fas fa-globe"></i>
+    </div>
+    
+    <div class="cy227-modal" id="cy227Modal">
+        <div class="cy227-modal-content">
+            <span class="cy227-close" id="cy227Close">&times;</span>
+            <iframe class="cy227-iframe" src="/preview-cy227"></iframe>
+        </div>
+    </div>
+
+    <script>
+        // cy227.com预览功能
+        document.addEventListener('DOMContentLoaded', function() {
+            const previewBtn = document.getElementById('cy227PreviewBtn');
+            const modal = document.getElementById('cy227Modal');
+            const closeBtn = document.getElementById('cy227Close');
+            
+            previewBtn.addEventListener('click', function() {
+                modal.style.display = 'block';
+            });
+            
+            closeBtn.addEventListener('click', function() {
+                modal.style.display = 'none';
+            });
+            
+            window.addEventListener('click', function(event) {
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>
+</html>
