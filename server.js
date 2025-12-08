@@ -893,10 +893,15 @@ app.get('/weekly_guard_inputs', async (req, res) => {
                         const key = (row.content || '').trim();
                         if (!key) return;
                         if (!stats[key]) {
-                            stats[key] = { count: 0, dates: [] };
+                            stats[key] = { count: 0, dates: [], dateCnt: [{date: row.date, dateCnt: 0}] };
                         }
                         stats[key].count += 1;
                         stats[key].dates.push(row.date);
+                        if (stats[key].dateCnt.some(item => item.date === row.date)) {
+                            stats[key].dateCnt.find(item => item.date === row.date).dateCnt += 1;
+                        } else {
+                            stats[key].dateCnt.push({date: row.date, dateCnt: 1});
+                        }
                     }
                 })
                 .on('end', resolve)
@@ -906,7 +911,7 @@ app.get('/weekly_guard_inputs', async (req, res) => {
         // 去重日期并排序
         const items = Object.keys(stats).map(k => {
             const uniqueDates = Array.from(new Set(stats[k].dates)).sort();
-            return { content: k, count: stats[k].count, dates: uniqueDates };
+            return { content: k, count: stats[k].count, dates: uniqueDates, dateCnt: stats[k].dateCnt };
         }).sort((a, b) => b.count - a.count || a.content.localeCompare(b.content));
         res.json({ success: true, items });
     } catch (error) {

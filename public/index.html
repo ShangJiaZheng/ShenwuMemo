@@ -1559,7 +1559,10 @@
                     const isAdvanced = it.content && it.content.startsWith('高级');
                     const iconName = isAdvanced ? '高级魔兽要诀' : it.content;
                     const iconPath = `/image/Icon/${encodeURIComponent(iconName)}.png`;
-                    const datesStr = (it.dates || []).join(',');
+                    let datesStr = '';
+                    if (it.dateCnt) {
+                        datesStr = it.dateCnt.map(d => `${d.date}` + (d.dateCnt ? ` (${d.dateCnt}个)` : '')).join(',');
+                    }
                     return `<span class=\"guard-chip\" data-content=\"${it.content}\" data-dates=\"${datesStr}\" onclick=\"openGuardDetail(this)\">\n`+
                         `<img src=\"${iconPath}\" alt=\"${it.content}\" class=\"guard-icon\" onerror=\"this.style.display='none'\">\n`+
                         `<span>${it.content} *${it.count}</span>\n`+
@@ -1582,7 +1585,7 @@
                 iconEl.style.display = '';
                 iconEl.onerror = function() { this.style.display = 'none'; };
                 textEl.textContent = `${content}`;
-                datesEl.textContent = dates.length ? `日期：${dates.join('、')}` : '';
+                datesEl.innerHTML = dates.length ? `${dates.join('</br>')}` : '';
                 modal.classList.add('show');
             }
 
