@@ -150,6 +150,27 @@ app.post('/upload', upload.single('image'), (req, res) => {
     });
 });
 
+// 获取 guard_inputs 数据
+app.get('/guard-inputs', (req, res) => {
+    const results = [];
+    const filePath = path.join(__dirname, 'data', 'guard_inputs.csv');
+    
+    if (!fs.existsSync(filePath)) {
+        return res.json([]);
+    }
+
+    fs.createReadStream(filePath)
+        .pipe(csv())
+        .on('data', (data) => results.push(data))
+        .on('end', () => {
+            res.json(results);
+        })
+        .on('error', (err) => {
+            console.error('读取guard_inputs.csv失败:', err);
+            res.status(500).json({ error: '读取文件失败' });
+        });
+});
+
 // 读取 CSV 文件，支持分页和排序
 app.get('/data', (req, res) => {
     const results = [];

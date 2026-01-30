@@ -537,6 +537,13 @@
                             <button id="top-stats-close" class="guard-modal-close">关闭</button>
                         </div>
                     </div>
+                    <div id="guard-inputs-modal" class="guard-modal">
+                        <div class="guard-modal-content">
+                            <div id="guard-inputs-title" class="guard-modal-title">月度收获</div>
+                            <div id="guard-inputs-list" class="mt-2 text-sm text-gray-700 top-list" style="max-height: 400px; overflow-y: auto;"></div>
+                            <button id="guard-inputs-close" class="guard-modal-close">关闭</button>
+                        </div>
+                    </div>
                     
                     <div class="mt-2 pt-3 border-t border-gray-200 flex-shrink-0">
                         <div class="flex items-center gap-6">
@@ -1697,12 +1704,12 @@
                         const arr = Object.values(map).filter(x => x.value > 0).sort((a,b) => b.value - a.value).slice(0,10);
                         title = '周最高收益前十';
                         itemsHtml = arr.map((x,i) => `
-                            <div class=\"top-item\">
-                                <div class=\"top-left\">
-                                    <div class=\"top-rank ${i<3?('r'+(i+1)):'rx'}\">${i+1}</div>
-                                    <div class=\"top-date\">${x.label}</div>
+                            <div class="top-item">
+                                <div class="top-left">
+                                    <div class="top-rank ${i<3?('r'+(i+1)):'rx'}">${i+1}</div>
+                                    <div class="top-date">${x.label}</div>
                                 </div>
-                                <div class=\"top-value\">${x.value.toLocaleString()}</div>
+                                <div class="top-value">${x.value.toLocaleString()}</div>
                             </div>
                         `).join('');
                     } else if (type === 'monthly') {
@@ -1717,12 +1724,12 @@
                         const arr = Object.entries(map).map(([label,value]) => ({ label, value })).filter(x => x.value > 0).sort((a,b)=>b.value-a.value).slice(0,10);
                         title = '月最高收益前十';
                         itemsHtml = arr.map((x,i) => `
-                            <div class=\"top-item\">
-                                <div class=\"top-left\">
-                                    <div class=\"top-rank ${i<3?('r'+(i+1)):'rx'}\">${i+1}</div>
-                                    <div class=\"top-date\">${x.label}</div>
+                            <div class="top-item clickable" onclick="showMonthlyGuardInputs('${x.label}')" style="cursor: pointer;">
+                                <div class="top-left">
+                                    <div class="top-rank ${i<3?('r'+(i+1)):'rx'}">${i+1}</div>
+                                    <div class="top-date">${x.label}</div>
                                 </div>
-                                <div class=\"top-value\">${x.value.toLocaleString()}</div>
+                                <div class="top-value">${x.value.toLocaleString()}</div>
                             </div>
                         `).join('');
                     }
@@ -1734,6 +1741,82 @@
 
             function closeTopStats() {
                 document.getElementById('top-stats-modal').classList.remove('show');
+            }
+
+            // 缓存 guard_inputs 数据
+            let guardInputsData = null;
+
+            async function loadGuardInputs() {
+                if (guardInputsData) return guardInputsData;
+                try {
+                    const response = await fetch('/guard-inputs');
+                    guardInputsData = await response.json();
+                    return guardInputsData;
+                } catch (error) {
+                    console.error('加载物品数据失败:', error);
+                    return [];
+                }
+            }
+
+            async function showMonthlyGuardInputs(monthStr) {
+                const data = await loadGuardInputs();
+                if (!data || data.length === 0) {
+                    document.getElementById('guard-inputs-title').textContent = `${monthStr} 物品收获`;
+                    document.getElementById('guard-inputs-list').innerHTML = '<div class="text-center p-4">该月无物品记录</div>';
+                    document.getElementById('guard-inputs-modal').classList.add('show');
+                    return;
+                }
+
+                // 筛选该月数据
+                const monthlyItems = data.filter(item => {
+                    if (!item.date) return false;
+                    // item.date 格式可能是 2025/11/24 或 2025-11-24
+                    const dateStr = item.date.replace(/\//g, '-');
+                    const date = new Date(dateStr);
+                    if (isNaN(date.getTime())) return false;
+                    const itemMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                    return itemMonth === monthStr;
+                });
+
+                if (monthlyItems.length === 0) {
+                    document.getElementById('guard-inputs-title').textContent = `${monthStr} 物品收获`;
+                    document.getElementById('guard-inputs-list').innerHTML = '<div class="text-center p-4">该月无物品记录</div>';
+                } else {
+                    // 统计物品数量
+                    const itemCounts = {};
+                    monthlyItems.forEach(item => {
+                        const name = item.content;
+                        if (!name) return;
+                        itemCounts[name] = (itemCounts[name] || 0) + 1;
+                    });
+
+                    // 排序：数量多的在前
+                    const sortedItems = Object.entries(itemCounts).sort((a, b) => b[1] - a[1]);
+
+                    // 生成 HTML
+                    const html = sortedItems.map(([name, count], index) => `
+                        <div class="top-item">
+                            <div class="top-left">
+                                <div class="top-rank ${index < 3 ? 'r' + (index + 1) : 'rx'}">${index + 1}</div>
+                                <div class="top-date">${name}</div>
+                            </div>
+                            <div class="top-value">x${count}</div>
+                        </div>
+                    `).join('');
+
+                    document.getElementById('guard-inputs-title').textContent = `${monthStr} 物品收获 (共 ${monthlyItems.length} 个)`;
+                    document.getElementById('guard-inputs-list').innerHTML = html;
+                }
+
+                document.getElementById('guard-inputs-modal').classList.add('show');
+            }
+
+            // 绑定关闭按钮
+            const guardInputsCloseBtn = document.getElementById('guard-inputs-close');
+            if (guardInputsCloseBtn) {
+                guardInputsCloseBtn.addEventListener('click', () => {
+                    document.getElementById('guard-inputs-modal').classList.remove('show');
+                });
             }
 
             async function saveGuardInput() {
